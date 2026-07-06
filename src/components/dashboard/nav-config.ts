@@ -1,5 +1,6 @@
 import {
   Bell,
+  BookOpenText,
   CalendarDays,
   FileText,
   GalleryHorizontal,
@@ -37,6 +38,7 @@ const generalNav: DashboardNavItem[] = [
 
 const contentNav: DashboardNavItem[] = [
   { title: "Announcements", href: "/dashboard/announcements", icon: Bell },
+  { title: "Bulletins", href: "/dashboard/bulletins", icon: BookOpenText },
   { title: "Events", href: "/dashboard/events", icon: CalendarDays },
   { title: "Courses", href: "/dashboard/courses", icon: GraduationCap },
   { title: "Lecturers", href: "/dashboard/lecturers", icon: Users },

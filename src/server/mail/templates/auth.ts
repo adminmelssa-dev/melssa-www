@@ -3,10 +3,18 @@ import {
   emailButton,
   emailDivider,
   emailHeading,
+  emailInfoCard,
   emailMutedParagraph,
   emailParagraph,
   emailRawLink,
 } from "@/server/mail/base";
+
+interface UserInvitationTemplateInput {
+  inviteUrl: string;
+  inviterName: string;
+  roleLabel: string;
+  expiresAtLabel: string;
+}
 
 export function verifyEmailTemplate(name: string, url: string): string {
   return authTemplate({
@@ -38,6 +46,34 @@ export function resetPasswordTemplate(name: string, url: string): string {
       "Use this secure MELSSA Student Portal link to reset your password.",
     title: "Reset your portal password",
     url,
+  });
+}
+
+export function userInvitationTemplate({
+  inviteUrl,
+  inviterName,
+  roleLabel,
+  expiresAtLabel,
+}: UserInvitationTemplateInput): string {
+  return authTemplate({
+    body: [
+      emailParagraph(`Hi there,`),
+      emailParagraph(
+        `${inviterName} invited you to join the MELSSA Student Portal with elevated workspace access.`,
+      ),
+      emailInfoCard([
+        { label: "Assigned role", value: roleLabel },
+        { label: "Invite expires", value: expiresAtLabel },
+      ]),
+      emailParagraph(
+        "Use the secure invite link below to sign in or create your account, then accept the role invitation.",
+      ),
+    ].join(""),
+    ctaLabel: "Accept invitation",
+    kicker: "Workspace invitation",
+    preheader: `You have been invited to MELSSA as ${roleLabel}.`,
+    title: "You have a MELSSA workspace invite",
+    url: inviteUrl,
   });
 }
 

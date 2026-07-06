@@ -8,6 +8,10 @@ import { KeyRound, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  getAuthPageHref,
+  normalizeAuthCallbackURL,
+} from "@/modules/auth/callback-url";
 import { authClient } from "@/modules/auth/client";
 import { AuthMessage } from "@/modules/auth/components/auth-message";
 
@@ -18,8 +22,13 @@ function passkeysAreAvailable(): boolean {
   );
 }
 
-export function SignInForm() {
+interface SignInFormProps {
+  callbackURL?: string;
+}
+
+export function SignInForm({ callbackURL = "/dashboard" }: SignInFormProps) {
   const router = useRouter();
+  const nextURL = normalizeAuthCallbackURL(callbackURL);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -35,7 +44,7 @@ export function SignInForm() {
     const result = await authClient.signIn.email({
       email,
       password,
-      callbackURL: "/dashboard",
+      callbackURL: nextURL,
       rememberMe,
     });
 
@@ -45,7 +54,7 @@ export function SignInForm() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push(nextURL);
     router.refresh();
   }
 
@@ -67,7 +76,7 @@ export function SignInForm() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(nextURL);
       router.refresh();
     } catch {
       setError("Passkey sign in was cancelled.");
@@ -156,7 +165,10 @@ export function SignInForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         Need an account?{" "}
-        <Link href="/sign-up" className="font-medium text-primary hover:underline">
+        <Link
+          href={getAuthPageHref("/sign-up", nextURL)}
+          className="font-medium text-primary hover:underline"
+        >
           Sign up
         </Link>
       </p>

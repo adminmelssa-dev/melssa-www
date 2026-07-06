@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { ROLES } from "@/modules/auth/roles";
 
+export const normalizedEmailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.email());
+
 export const userRoleSchema = z.union([
   z.literal(ROLES.STUDENT),
   z.literal(ROLES.CONTENT_ADMIN),
@@ -24,6 +30,59 @@ export const adminUserRowSchema = z.object({
 
 export const adminUsersResponseSchema = z.object({
   users: z.array(adminUserRowSchema),
+});
+
+export const adminInvitationStatusSchema = z.union([
+  z.literal("pending"),
+  z.literal("expired"),
+  z.literal("accepted"),
+  z.literal("revoked"),
+]);
+
+export const adminInvitationRowSchema = z.object({
+  id: z.string(),
+  email: z.email(),
+  role: userRoleSchema,
+  status: adminInvitationStatusSchema,
+  invitedByUserId: z.string().nullable(),
+  acceptedByUserId: z.string().nullable(),
+  acceptedAt: z.string().nullable(),
+  revokedAt: z.string().nullable(),
+  expiresAt: z.string(),
+  lastSentAt: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const adminInvitationsResponseSchema = z.object({
+  invitations: z.array(adminInvitationRowSchema),
+});
+
+export const inviteAdminUserInputSchema = z.object({
+  email: normalizedEmailSchema,
+  role: userRoleSchema,
+});
+
+export const adminInvitationMutationSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("resend"),
+    invitationId: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("revoke"),
+    invitationId: z.string().min(1),
+  }),
+]);
+
+export const acceptAuthInvitationInputSchema = z.object({
+  token: z.string().trim().min(32).max(256),
+});
+
+export const authInvitationPreviewSchema = z.object({
+  email: z.email(),
+  role: userRoleSchema,
+  status: adminInvitationStatusSchema,
+  expiresAt: z.string().nullable(),
 });
 
 export const updateAdminUserRoleInputSchema = z.object({
@@ -59,6 +118,25 @@ export const adminUserMutationSchema = z.discriminatedUnion("type", [
 
 export type AdminUserRow = z.infer<typeof adminUserRowSchema>;
 export type AdminUsersResponse = z.infer<typeof adminUsersResponseSchema>;
+export type AdminInvitationStatus = z.infer<
+  typeof adminInvitationStatusSchema
+>;
+export type AdminInvitationRow = z.infer<typeof adminInvitationRowSchema>;
+export type AdminInvitationsResponse = z.infer<
+  typeof adminInvitationsResponseSchema
+>;
+export type InviteAdminUserInput = z.infer<
+  typeof inviteAdminUserInputSchema
+>;
+export type AdminInvitationMutation = z.infer<
+  typeof adminInvitationMutationSchema
+>;
+export type AcceptAuthInvitationInput = z.infer<
+  typeof acceptAuthInvitationInputSchema
+>;
+export type AuthInvitationPreview = z.infer<
+  typeof authInvitationPreviewSchema
+>;
 export type AdminUserMutation = z.infer<typeof adminUserMutationSchema>;
 export type UpdateAdminUserRoleInput = z.infer<
   typeof updateAdminUserRoleInputSchema

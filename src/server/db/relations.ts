@@ -7,6 +7,12 @@ export const relations = defineRelations(schema, (r) => ({
     accounts: r.many.account(),
     passkeys: r.many.passkey(),
     twoFactors: r.many.twoFactor(),
+    sentAuthInvitations: r.many.authInvitations({
+      alias: "auth_invitation_inviter",
+    }),
+    acceptedAuthInvitations: r.many.authInvitations({
+      alias: "auth_invitation_acceptor",
+    }),
     announcements: r.many.announcements(),
     events: r.many.events(),
     resources: r.many.resources(),
@@ -15,6 +21,15 @@ export const relations = defineRelations(schema, (r) => ({
     galleryItems: r.many.galleryItems(),
     studentSpotlights: r.many.studentSpotlights(),
     auditLogs: r.many.auditLogs(),
+    createdBulletinIssues: r.many.bulletinIssues({
+      alias: "created_bulletin_issues",
+    }),
+    updatedBulletinIssues: r.many.bulletinIssues({
+      alias: "updated_bulletin_issues",
+    }),
+    sentBulletinIssues: r.many.bulletinIssues({
+      alias: "sent_bulletin_issues",
+    }),
   },
   session: {
     user: r.one.user({
@@ -42,6 +57,18 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.twoFactor.userId,
       to: r.user.id,
       optional: false,
+    }),
+  },
+  authInvitations: {
+    invitedBy: r.one.user({
+      from: r.authInvitations.invitedByUserId,
+      to: r.user.id,
+      alias: "auth_invitation_inviter",
+    }),
+    acceptedBy: r.one.user({
+      from: r.authInvitations.acceptedByUserId,
+      to: r.user.id,
+      alias: "auth_invitation_acceptor",
     }),
   },
   storageObjects: {
@@ -153,6 +180,38 @@ export const relations = defineRelations(schema, (r) => ({
     actor: r.one.user({
       from: r.auditLogs.actorUserId,
       to: r.user.id,
+    }),
+  },
+  bulletinIssues: {
+    creator: r.one.user({
+      from: r.bulletinIssues.createdById,
+      to: r.user.id,
+      alias: "created_bulletin_issues",
+    }),
+    updater: r.one.user({
+      from: r.bulletinIssues.updatedById,
+      to: r.user.id,
+      alias: "updated_bulletin_issues",
+    }),
+    sender: r.one.user({
+      from: r.bulletinIssues.sentById,
+      to: r.user.id,
+      alias: "sent_bulletin_issues",
+    }),
+    deliveries: r.many.bulletinDeliveries(),
+  },
+  bulletinSubscriptions: {
+    deliveries: r.many.bulletinDeliveries(),
+  },
+  bulletinDeliveries: {
+    issue: r.one.bulletinIssues({
+      from: r.bulletinDeliveries.issueId,
+      to: r.bulletinIssues.id,
+      optional: false,
+    }),
+    subscription: r.one.bulletinSubscriptions({
+      from: r.bulletinDeliveries.subscriptionId,
+      to: r.bulletinSubscriptions.id,
     }),
   },
 }));

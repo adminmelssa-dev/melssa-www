@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, Globe, Mail, MessageCircle } from "lucide-react";
+import { Globe, Mail, MessageCircle } from "lucide-react";
 import { MelssaWordmark } from "@/components/brand/melssa-wordmark";
+import { BulletinSignupForm } from "@/components/layout/bulletin-signup-form";
 
 interface FooterColumn {
   heading: string;
@@ -86,21 +87,7 @@ export function Footer() {
           <p className="mt-5 text-sm leading-relaxed text-cream/60">
             Association news in your inbox, every week.
           </p>
-          <form className="mt-4 flex items-center gap-2 border-b border-cream/20 pb-2.5">
-            <input
-              type="email"
-              placeholder="your.email@atu.edu.gh"
-              aria-label="Email address"
-              className="min-w-0 flex-1 bg-transparent text-sm text-cream outline-none placeholder:text-cream/40"
-            />
-            <button
-              type="submit"
-              aria-label="Subscribe"
-              className="text-gold-bright transition-transform hover:translate-x-0.5"
-            >
-              <ArrowRight className="size-4" />
-            </button>
-          </form>
+          <BulletinSignupForm />
         </div>
       </div>
 

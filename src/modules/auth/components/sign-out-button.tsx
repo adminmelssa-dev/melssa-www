@@ -7,7 +7,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/modules/auth/client";
 
-export function SignOutButton() {
+interface SignOutButtonProps {
+  redirectTo?: string;
+}
+
+export function SignOutButton({
+  redirectTo = "/sign-in?force=true",
+}: SignOutButtonProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,7 +28,7 @@ export function SignOutButton() {
       return;
     }
 
-    router.push("/sign-in?force=true");
+    router.push(redirectTo);
     router.refresh();
   }
 

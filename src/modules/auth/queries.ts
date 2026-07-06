@@ -1,10 +1,14 @@
 import "server-only";
 
 import { desc } from "drizzle-orm";
-import type { AdminUserRow } from "@/modules/auth/contracts";
+import type {
+  AdminInvitationRow,
+  AdminInvitationStatus,
+  AdminUserRow,
+} from "@/modules/auth/contracts";
 import { ROLES, type UserRole } from "@/modules/auth/roles";
 import { db } from "@/server/db";
-import { user } from "@/server/db/schema";
+import { authInvitations, user } from "@/server/db/schema";
 
 export interface AdminUserListItem {
   id: string;
@@ -17,6 +21,20 @@ export interface AdminUserListItem {
   banReason: string | null;
   banExpires: Date | null;
   lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AdminInvitationListItem {
+  id: string;
+  email: string;
+  role: UserRole;
+  invitedByUserId: string | null;
+  acceptedByUserId: string | null;
+  acceptedAt: Date | null;
+  revokedAt: Date | null;
+  expiresAt: Date;
+  lastSentAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,4 +87,69 @@ export function serializeAdminUser(
 export async function getSerializedAdminUsers(): Promise<AdminUserRow[]> {
   const users = await getAdminUsers();
   return users.map((item) => serializeAdminUser(item));
+}
+
+export async function getAdminInvitations(): Promise<
+  AdminInvitationListItem[]
+> {
+  const rows = await db
+    .select({
+      id: authInvitations.id,
+      email: authInvitations.email,
+      role: authInvitations.role,
+      invitedByUserId: authInvitations.invitedByUserId,
+      acceptedByUserId: authInvitations.acceptedByUserId,
+      acceptedAt: authInvitations.acceptedAt,
+      revokedAt: authInvitations.revokedAt,
+      expiresAt: authInvitations.expiresAt,
+      lastSentAt: authInvitations.lastSentAt,
+      createdAt: authInvitations.createdAt,
+      updatedAt: authInvitations.updatedAt,
+    })
+    .from(authInvitations)
+    .orderBy(desc(authInvitations.createdAt));
+
+  return rows.map((row) => ({
+    ...row,
+    role: row.role ?? ROLES.STUDENT,
+  }));
+}
+
+export function serializeAdminInvitation(
+  item: AdminInvitationListItem,
+): AdminInvitationRow {
+  return {
+    id: item.id,
+    email: item.email,
+    role: item.role,
+    status: getAdminInvitationStatus(item),
+    invitedByUserId: item.invitedByUserId,
+    acceptedByUserId: item.acceptedByUserId,
+    acceptedAt: item.acceptedAt?.toISOString() ?? null,
+    revokedAt: item.revokedAt?.toISOString() ?? null,
+    expiresAt: item.expiresAt.toISOString(),
+    lastSentAt: item.lastSentAt.toISOString(),
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+  };
+}
+
+export async function getSerializedAdminInvitations(): Promise<
+  AdminInvitationRow[]
+> {
+  const invitations = await getAdminInvitations();
+  return invitations.map((item) => serializeAdminInvitation(item));
+}
+
+export function getAdminInvitationStatus({
+  acceptedAt,
+  revokedAt,
+  expiresAt,
+}: Pick<
+  AdminInvitationListItem,
+  "acceptedAt" | "revokedAt" | "expiresAt"
+>): AdminInvitationStatus {
+  if (acceptedAt) return "accepted";
+  if (revokedAt) return "revoked";
+  return expiresAt.getTime() <= Date.now() ? "expired" : "pending";
 }

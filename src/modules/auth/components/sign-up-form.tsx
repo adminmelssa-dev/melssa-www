@@ -9,16 +9,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TurnstileField } from "@/components/security/turnstile-field";
+import {
+  getAuthPageHref,
+  normalizeAuthCallbackURL,
+} from "@/modules/auth/callback-url";
 import { authClient } from "@/modules/auth/client";
 import { AuthMessage } from "@/modules/auth/components/auth-message";
 import { PasswordStrengthMeter } from "@/modules/auth/components/password-strength-meter";
 
 interface SignUpFormProps {
+  callbackURL?: string;
   turnstileSiteKey: string | null;
 }
 
-export function SignUpForm({ turnstileSiteKey }: SignUpFormProps) {
+export function SignUpForm({
+  callbackURL = "/dashboard",
+  turnstileSiteKey,
+}: SignUpFormProps) {
   const router = useRouter();
+  const nextURL = normalizeAuthCallbackURL(callbackURL);
   const turnstileEnabled = turnstileSiteKey !== null;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -57,7 +66,7 @@ export function SignUpForm({ turnstileSiteKey }: SignUpFormProps) {
       name,
       email,
       password,
-      callbackURL: "/dashboard",
+      callbackURL: nextURL,
     };
 
     const result = turnstileEnabled
@@ -76,7 +85,7 @@ export function SignUpForm({ turnstileSiteKey }: SignUpFormProps) {
     }
 
     if (result.data?.token) {
-      router.push("/dashboard");
+      router.push(nextURL);
       router.refresh();
       return;
     }
@@ -167,7 +176,10 @@ export function SignUpForm({ turnstileSiteKey }: SignUpFormProps) {
 
       <p className="text-center text-sm text-muted-foreground">
         Already registered?{" "}
-        <Link href="/sign-in" className="font-medium text-primary hover:underline">
+        <Link
+          href={getAuthPageHref("/sign-in", nextURL)}
+          className="font-medium text-primary hover:underline"
+        >
           Sign in
         </Link>
       </p>

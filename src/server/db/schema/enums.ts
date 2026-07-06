@@ -75,3 +75,14 @@ export const galleryItemTypeEnum = pgEnum("gallery_item_type", [
   "outreach",
   "other",
 ]);
+
+export const bulletinIssueStatusEnum = pgEnum("bulletin_issue_status", [
+  "draft",
+  "sent",
+  "archived",
+]);
+
+export const bulletinDeliveryStatusEnum = pgEnum("bulletin_delivery_status", [
+  "sent",
+  "failed",
+]);

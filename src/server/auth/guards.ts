@@ -87,6 +87,10 @@ export function hasPermission(
       }).success;
     case "audit":
       return roleDefinition.authorize({ audit: [permission.action] }).success;
+    case "bulletin":
+      return roleDefinition.authorize({
+        bulletin: [permission.action],
+      }).success;
     case "course":
       return roleDefinition.authorize({ course: [permission.action] }).success;
     case "event":

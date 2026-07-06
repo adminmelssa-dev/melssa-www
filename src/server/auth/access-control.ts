@@ -9,6 +9,7 @@ function actions<const TAction extends string[]>(
 export const statement = {
   announcement: actions("create", "read", "update", "delete", "publish"),
   audit: actions("read"),
+  bulletin: actions("create", "read", "update", "send", "archive"),
   course: actions("create", "read", "update", "delete"),
   event: actions("create", "read", "update", "delete", "publish"),
   resource: actions("create", "read", "update", "delete", "publish"),
@@ -44,6 +45,7 @@ export const studentRole = ac.newRole({
 
 export const contentAdminRole = ac.newRole({
   announcement: ["create", "read", "update", "delete", "publish"],
+  bulletin: ["create", "read", "update", "send", "archive"],
   course: ["create", "read", "update", "delete"],
   event: ["create", "read", "update", "delete", "publish"],
   resource: ["create", "read", "update", "delete", "publish"],
@@ -59,6 +61,7 @@ export const contentAdminRole = ac.newRole({
 export const siteAdminRole = ac.newRole({
   announcement: ["create", "read", "update", "delete", "publish"],
   audit: ["read"],
+  bulletin: ["create", "read", "update", "send", "archive"],
   course: ["create", "read", "update", "delete"],
   event: ["create", "read", "update", "delete", "publish"],
   resource: ["create", "read", "update", "delete", "publish"],

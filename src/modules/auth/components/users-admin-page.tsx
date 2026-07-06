@@ -11,7 +11,11 @@ import {
 } from "@/components/ui/card";
 import type { AdminUserRow } from "@/modules/auth/contracts";
 import { ROLES } from "@/modules/auth/roles";
-import { getSerializedAdminUsers } from "@/modules/auth/queries";
+import {
+  getSerializedAdminInvitations,
+  getSerializedAdminUsers,
+} from "@/modules/auth/queries";
+import { InvitationsPanel } from "@/modules/auth/components/invitations-panel";
 import { UsersTable } from "@/modules/auth/components/users-table";
 import { hasPermission, requirePermission } from "@/server/auth/guards";
 
@@ -43,6 +47,9 @@ export async function UsersAdminPage() {
       action: "update",
     }),
   };
+  const invitations = permissions.canSetRole
+    ? await getSerializedAdminInvitations()
+    : [];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -75,6 +82,10 @@ export async function UsersAdminPage() {
         initialUsers={users}
         permissions={permissions}
       />
+
+      {permissions.canSetRole ? (
+        <InvitationsPanel initialInvitations={invitations} />
+      ) : null}
     </div>
   );
 }

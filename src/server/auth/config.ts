@@ -1,10 +1,15 @@
 import "server-only";
 
 import { passkey } from "@better-auth/passkey";
-import { and, eq, isNull } from "drizzle-orm";
+import {
+  and,
+  eq,
+  isNull,
+} from "drizzle-orm";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { captcha } from "better-auth/plugins";
+import { hasPendingAuthInvitationForEmail } from "@/modules/auth/server/invitations";
 import { db } from "@/server/db";
 import * as schema from "@/server/db/schema";
 import { env } from "@/lib/env";
@@ -31,7 +36,7 @@ const captchaPlugin = env.TURNSTILE_SECRET_KEY
     })
   : null;
 
-function isAllowedEmail(email: string): boolean {
+async function isAllowedEmail(email: string): Promise<boolean> {
   const normalizedEmail = email.toLowerCase();
   const domain = normalizedEmail.split("@")[1];
 
@@ -41,10 +46,14 @@ function isAllowedEmail(email: string): boolean {
 
   if (allowListsAreEmpty) return true;
 
-  return (
+  if (
     env.AUTH_ALLOWED_EMAILS.includes(normalizedEmail) ||
     (domain !== undefined && env.AUTH_ALLOWED_EMAIL_DOMAINS.includes(domain))
-  );
+  ) {
+    return true;
+  }
+
+  return hasPendingAuthInvitationForEmail(normalizedEmail);
 }
 
 export const auth = betterAuth({
@@ -56,7 +65,7 @@ export const auth = betterAuth({
     user: {
       create: {
         async before(user) {
-          if (!isAllowedEmail(user.email)) {
+          if (!(await isAllowedEmail(user.email))) {
             return false;
           }
         },

@@ -41,12 +41,14 @@ describe("auth roles", () => {
     expect(studentRole.authorize({ lecturer: ["read"] }).success).toBe(false);
     expect(studentRole.authorize({ gallery: ["read"] }).success).toBe(false);
     expect(studentRole.authorize({ spotlight: ["read"] }).success).toBe(false);
+    expect(studentRole.authorize({ bulletin: ["read"] }).success).toBe(false);
   });
 
   test("keeps admin roles authorized for management reads", () => {
     expect(
       contentAdminRole.authorize({ announcement: ["read"] }).success,
     ).toBe(true);
+    expect(contentAdminRole.authorize({ bulletin: ["send"] }).success).toBe(true);
     expect(siteAdminRole.authorize({ audit: ["read"] }).success).toBe(true);
   });
 });

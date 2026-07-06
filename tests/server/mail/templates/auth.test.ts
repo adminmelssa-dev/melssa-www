@@ -20,6 +20,26 @@ describe("auth email templates", () => {
     expect(html).toContain("token=&lt;token&gt;");
     expect(html).not.toContain("<script>Student</script>");
   });
+
+  test("renders escaped workspace invitation details", async () => {
+    setRequiredEnv();
+
+    const { userInvitationTemplate } = await import(
+      "../../../../src/server/mail/templates/auth"
+    );
+    const html = userInvitationTemplate({
+      inviteUrl: "https://portal.example.com/accept-invite?token=<token>",
+      inviterName: "<Admin>",
+      roleLabel: "Content Admin",
+      expiresAtLabel: "Jul 13, 2026, 12:00 PM",
+    });
+
+    expect(html).toContain("Workspace invitation");
+    expect(html).toContain("&lt;Admin&gt;");
+    expect(html).toContain("Content Admin");
+    expect(html).toContain("token=&lt;token&gt;");
+    expect(html).not.toContain("<Admin>");
+  });
 });
 
 function setRequiredEnv(): void {
