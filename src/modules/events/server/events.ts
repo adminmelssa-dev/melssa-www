@@ -15,6 +15,7 @@ import {
   events,
   storageObjects,
 } from "@/server/db/schema";
+import { invalidateCacheKeys, PUBLIC_CACHE_KEYS } from "@/server/cache";
 import { notifyEventPublished } from "@/server/notifications";
 import { deleteStoredObjectById } from "@/server/storage/objects";
 
@@ -71,7 +72,7 @@ export async function createEvent({
     });
   }
 
-  revalidateEvents();
+  await revalidateEvents();
 }
 
 export async function updateEvent({
@@ -136,7 +137,7 @@ export async function updateEvent({
     });
   }
 
-  revalidateEvents();
+  await revalidateEvents();
 }
 
 export async function deleteEvent({
@@ -166,7 +167,7 @@ export async function deleteEvent({
     },
   });
 
-  revalidateEvents();
+  await revalidateEvents();
 }
 
 async function ensureEventPosterUsable(
@@ -224,9 +225,10 @@ async function getEventForMutation(eventId: number) {
   return event;
 }
 
-function revalidateEvents(): void {
+async function revalidateEvents(): Promise<void> {
   revalidatePath("/");
   revalidatePath("/events");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/events");
+  await invalidateCacheKeys([PUBLIC_CACHE_KEYS.events]);
 }

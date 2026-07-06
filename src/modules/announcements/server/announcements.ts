@@ -15,6 +15,7 @@ import {
   announcements,
   storageObjects,
 } from "@/server/db/schema";
+import { invalidateCacheKeys, PUBLIC_CACHE_KEYS } from "@/server/cache";
 import { notifyAnnouncementPublished } from "@/server/notifications";
 import { deleteStoredObjectById } from "@/server/storage/objects";
 
@@ -69,7 +70,7 @@ export async function createAnnouncement({
     });
   }
 
-  revalidateAnnouncements();
+  await revalidateAnnouncements();
 }
 
 export async function updateAnnouncement({
@@ -139,7 +140,7 @@ export async function updateAnnouncement({
     });
   }
 
-  revalidateAnnouncements();
+  await revalidateAnnouncements();
 }
 
 export async function deleteAnnouncement({
@@ -174,7 +175,7 @@ export async function deleteAnnouncement({
     },
   });
 
-  revalidateAnnouncements();
+  await revalidateAnnouncements();
 }
 
 async function ensureAnnouncementAttachmentUsable(
@@ -241,9 +242,10 @@ async function getAnnouncementForMutation(announcementId: number) {
   return announcement;
 }
 
-function revalidateAnnouncements(): void {
+async function revalidateAnnouncements(): Promise<void> {
   revalidatePath("/");
   revalidatePath("/announcements");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/announcements");
+  await invalidateCacheKeys([PUBLIC_CACHE_KEYS.announcements]);
 }

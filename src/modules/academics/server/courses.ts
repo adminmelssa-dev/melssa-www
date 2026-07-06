@@ -15,6 +15,7 @@ import {
   lecturerCourses,
   resources,
 } from "@/server/db/schema";
+import { invalidateCacheKeys, PUBLIC_CACHE_KEYS } from "@/server/cache";
 
 export async function createCourse({
   actorUserId,
@@ -58,7 +59,7 @@ export async function createCourse({
     },
   });
 
-  revalidateCourses();
+  await revalidateCourses();
 }
 
 export async function updateCourse({
@@ -101,7 +102,7 @@ export async function updateCourse({
     },
   });
 
-  revalidateCourses();
+  await revalidateCourses();
 }
 
 export async function deleteCourse({
@@ -136,7 +137,7 @@ export async function deleteCourse({
     },
   });
 
-  revalidateCourses();
+  await revalidateCourses();
 }
 
 async function ensureCourseCodeAvailable(
@@ -188,8 +189,14 @@ async function getCourseUsage(courseId: number): Promise<{
   return { resourceCount, lecturerCount };
 }
 
-function revalidateCourses(): void {
+async function revalidateCourses(): Promise<void> {
+  revalidatePath("/lecturers");
+  revalidatePath("/resources");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/courses");
   revalidatePath("/dashboard/resources");
+  await invalidateCacheKeys([
+    PUBLIC_CACHE_KEYS.lecturers,
+    PUBLIC_CACHE_KEYS.resources,
+  ]);
 }

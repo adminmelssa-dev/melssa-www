@@ -5,13 +5,22 @@ import {
   desc,
   eq,
 } from "drizzle-orm";
-import type { AnnouncementRow } from "@/modules/announcements/contracts";
+import { z } from "zod";
+import {
+  announcementRowSchema,
+  type AnnouncementRow,
+} from "@/modules/announcements/contracts";
 import { db } from "@/server/db";
 import {
   announcements,
   storageObjects,
   user,
 } from "@/server/db/schema";
+import {
+  getCachedJson,
+  PUBLIC_CACHE_KEYS,
+  PUBLIC_CACHE_TTL_SECONDS,
+} from "@/server/cache";
 
 interface AnnouncementListItem {
   id: number;
@@ -109,8 +118,15 @@ export async function getSerializedAnnouncements(): Promise<AnnouncementRow[]> {
 export async function getSerializedPublishedAnnouncements(): Promise<
   AnnouncementRow[]
 > {
-  const announcementRows = await getPublishedAnnouncements();
-  return announcementRows.map((item) => serializeAnnouncement(item));
+  return getCachedJson({
+    key: PUBLIC_CACHE_KEYS.announcements,
+    load: async () => {
+      const announcementRows = await getPublishedAnnouncements();
+      return announcementRows.map((item) => serializeAnnouncement(item));
+    },
+    schema: z.array(announcementRowSchema),
+    ttlSeconds: PUBLIC_CACHE_TTL_SECONDS,
+  });
 }
 
 function announcementSelect() {

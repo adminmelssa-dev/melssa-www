@@ -27,6 +27,7 @@ import {
   bulletinDeliveries,
   bulletinIssues,
 } from "@/server/db/schema";
+import { acquireLock, releaseLock } from "@/server/locks";
 import { sendEmail } from "@/server/mail";
 import { bulletinIssueTemplate } from "@/server/mail/templates/bulletin";
 
@@ -171,6 +172,32 @@ export async function archiveBulletinIssue({
 }
 
 export async function sendBulletinIssue({
+  actorUserId,
+  input,
+}: {
+  actorUserId: string;
+  input: SendBulletinIssueInput;
+}): Promise<SendBulletinResult> {
+  const lock = await acquireLock({
+    key: `bulletin:send:${input.bulletinId}`,
+    ttlSeconds: 15 * 60,
+  });
+
+  if (!lock) {
+    throw new ExpectedError("This bulletin is already being sent.");
+  }
+
+  try {
+    return await sendBulletinIssueWithLock({
+      actorUserId,
+      input,
+    });
+  } finally {
+    await releaseLock(lock);
+  }
+}
+
+async function sendBulletinIssueWithLock({
   actorUserId,
   input,
 }: {

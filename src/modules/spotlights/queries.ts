@@ -5,13 +5,22 @@ import {
   desc,
   eq,
 } from "drizzle-orm";
-import type { SpotlightRow } from "@/modules/spotlights/contracts";
+import { z } from "zod";
+import {
+  spotlightRowSchema,
+  type SpotlightRow,
+} from "@/modules/spotlights/contracts";
 import { db } from "@/server/db";
 import {
   storageObjects,
   studentSpotlights,
   user,
 } from "@/server/db/schema";
+import {
+  getCachedJson,
+  PUBLIC_CACHE_KEYS,
+  PUBLIC_CACHE_TTL_SECONDS,
+} from "@/server/cache";
 
 interface SpotlightListItem {
   id: number;
@@ -108,8 +117,15 @@ export async function getSerializedSpotlights(): Promise<SpotlightRow[]> {
 export async function getSerializedPublishedSpotlights(): Promise<
   SpotlightRow[]
 > {
-  const spotlights = await getPublishedSpotlights();
-  return spotlights.map((spotlight) => serializeSpotlight(spotlight));
+  return getCachedJson({
+    key: PUBLIC_CACHE_KEYS.spotlights,
+    load: async () => {
+      const spotlights = await getPublishedSpotlights();
+      return spotlights.map((spotlight) => serializeSpotlight(spotlight));
+    },
+    schema: z.array(spotlightRowSchema),
+    ttlSeconds: PUBLIC_CACHE_TTL_SECONDS,
+  });
 }
 
 function spotlightSelect() {

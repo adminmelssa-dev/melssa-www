@@ -19,6 +19,7 @@ import {
   resources,
   storageObjects,
 } from "@/server/db/schema";
+import { invalidateCacheKeys, PUBLIC_CACHE_KEYS } from "@/server/cache";
 import { notifyResourcePublished } from "@/server/notifications";
 import { deleteStoredObjectById } from "@/server/storage/objects";
 
@@ -81,7 +82,7 @@ export async function createResource({
     });
   }
 
-  revalidateResources();
+  await revalidateResources();
 }
 
 export async function updateResource({
@@ -142,7 +143,7 @@ export async function updateResource({
     });
   }
 
-  revalidateResources();
+  await revalidateResources();
 }
 
 export async function deleteResource({
@@ -171,7 +172,7 @@ export async function deleteResource({
     },
   });
 
-  revalidateResources();
+  await revalidateResources();
 }
 
 async function ensureCourseExists(courseId: number | null): Promise<void> {
@@ -239,7 +240,9 @@ async function getResourceForMutation(resourceId: number) {
   return resource;
 }
 
-function revalidateResources(): void {
+async function revalidateResources(): Promise<void> {
+  revalidatePath("/resources");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/resources");
+  await invalidateCacheKeys([PUBLIC_CACHE_KEYS.resources]);
 }

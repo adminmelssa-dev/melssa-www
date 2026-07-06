@@ -5,7 +5,11 @@ import {
   desc,
   eq,
 } from "drizzle-orm";
-import type { ResourceRow } from "@/modules/resources/contracts";
+import { z } from "zod";
+import {
+  resourceRowSchema,
+  type ResourceRow,
+} from "@/modules/resources/contracts";
 import { db } from "@/server/db";
 import {
   courses,
@@ -13,6 +17,11 @@ import {
   storageObjects,
   user,
 } from "@/server/db/schema";
+import {
+  getCachedJson,
+  PUBLIC_CACHE_KEYS,
+  PUBLIC_CACHE_TTL_SECONDS,
+} from "@/server/cache";
 
 interface ResourceListItem {
   id: number;
@@ -139,6 +148,13 @@ export async function getSerializedResources(): Promise<ResourceRow[]> {
 }
 
 export async function getSerializedPublishedResources(): Promise<ResourceRow[]> {
-  const resourceRows = await getPublishedResources();
-  return resourceRows.map((item) => serializeResource(item));
+  return getCachedJson({
+    key: PUBLIC_CACHE_KEYS.resources,
+    load: async () => {
+      const resourceRows = await getPublishedResources();
+      return resourceRows.map((item) => serializeResource(item));
+    },
+    schema: z.array(resourceRowSchema),
+    ttlSeconds: PUBLIC_CACHE_TTL_SECONDS,
+  });
 }

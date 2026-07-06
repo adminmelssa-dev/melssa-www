@@ -41,6 +41,9 @@ export function ConcernSubmissionForm({
   turnstileSiteKey,
 }: ConcernSubmissionFormProps) {
   const turnstileEnabled = turnstileSiteKey !== null;
+  const [idempotencyKey, setIdempotencyKey] = React.useState(() =>
+    createClientIdempotencyKey(),
+  );
   const [values, setValues] = React.useState<ConcernSubmissionValues>({
     category: "other",
     subject: "",
@@ -62,6 +65,7 @@ export function ConcernSubmissionForm({
     onSuccess(result) {
       toast.success(result.message);
       setValues({ category: "other", subject: "", message: "" });
+      setIdempotencyKey(createClientIdempotencyKey());
       if (turnstileEnabled) setTurnstileResetSignal((value) => value + 1);
     },
   });
@@ -87,7 +91,11 @@ export function ConcernSubmissionForm({
       return;
     }
 
-    submitMutation.mutate({ input: parsedInput.data, token: turnstileToken });
+    submitMutation.mutate({
+      idempotencyKey,
+      input: parsedInput.data,
+      token: turnstileToken,
+    });
   }
 
   function updateCategory(value: string): void {
@@ -188,9 +196,11 @@ export function ConcernSubmissionForm({
 }
 
 async function submitConcern({
+  idempotencyKey,
   input,
   token,
 }: {
+  idempotencyKey: string;
   input: CreateConcernInput;
   token: string;
 }): Promise<ActionResult> {
@@ -199,6 +209,7 @@ async function submitConcern({
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
       ...(token ? { "x-captcha-response": token } : {}),
     },
     method: "POST",
@@ -211,4 +222,8 @@ async function submitConcern({
   }
 
   return result;
+}
+
+function createClientIdempotencyKey(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 }

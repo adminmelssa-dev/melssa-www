@@ -5,13 +5,22 @@ import {
   desc,
   eq,
 } from "drizzle-orm";
-import type { GalleryItemRow } from "@/modules/gallery/contracts";
+import { z } from "zod";
+import {
+  galleryItemRowSchema,
+  type GalleryItemRow,
+} from "@/modules/gallery/contracts";
 import { db } from "@/server/db";
 import {
   galleryItems,
   storageObjects,
   user,
 } from "@/server/db/schema";
+import {
+  getCachedJson,
+  PUBLIC_CACHE_KEYS,
+  PUBLIC_CACHE_TTL_SECONDS,
+} from "@/server/cache";
 
 interface GalleryListItem {
   id: number;
@@ -84,6 +93,17 @@ export function serializeGalleryItem(item: GalleryListItem): GalleryItemRow {
 export async function getSerializedGalleryItems(): Promise<GalleryItemRow[]> {
   const items = await getGalleryItems();
   return items.map((item) => serializeGalleryItem(item));
+}
+
+export async function getCachedSerializedGalleryItems(): Promise<
+  GalleryItemRow[]
+> {
+  return getCachedJson({
+    key: PUBLIC_CACHE_KEYS.gallery,
+    load: getSerializedGalleryItems,
+    schema: z.array(galleryItemRowSchema),
+    ttlSeconds: PUBLIC_CACHE_TTL_SECONDS,
+  });
 }
 
 function gallerySelect() {

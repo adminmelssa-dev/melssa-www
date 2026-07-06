@@ -19,6 +19,7 @@ const optionalEnvString = z
   });
 
 const optionalEnvEmail = optionalEnvString.pipe(z.email().optional());
+const optionalEnvUrl = optionalEnvString.pipe(z.url().optional());
 
 const optionalCsv = z
   .string()
@@ -56,6 +57,14 @@ const envSchema = z
     MAIL_DRIVER: z.union([z.literal("log"), z.literal("resend")]).default("log"),
     RESEND_API_KEY: optionalEnvString,
     RESEND_FROM: optionalEnvString,
+    CACHE_DRIVER: z.union([z.literal("noop"), z.literal("redis")]).optional(),
+    IDEMPOTENCY_DRIVER: z
+      .union([z.literal("noop"), z.literal("redis")])
+      .optional(),
+    RATE_LIMIT_DRIVER: z.union([z.literal("database"), z.literal("redis")]).optional(),
+    LOCK_DRIVER: z.union([z.literal("noop"), z.literal("redis")]).optional(),
+    UPSTASH_REDIS_REST_URL: optionalEnvUrl,
+    UPSTASH_REDIS_REST_TOKEN: optionalEnvString,
     UPLOAD_DRIVER: z.literal("uploadthing").default("uploadthing"),
     UPLOADTHING_TOKEN: optionalEnvString,
     UPLOAD_PUBLIC_HOSTNAMES: optionalCsv,
@@ -77,6 +86,33 @@ const envSchema = z
           message: "RESEND_FROM is required when MAIL_DRIVER=resend.",
         });
       }
+    }
+
+    if (
+      Boolean(value.UPSTASH_REDIS_REST_URL) !==
+      Boolean(value.UPSTASH_REDIS_REST_TOKEN)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["UPSTASH_REDIS_REST_URL"],
+        message:
+          "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set together.",
+      });
+    }
+
+    if (
+      (value.CACHE_DRIVER === "redis" ||
+        value.IDEMPOTENCY_DRIVER === "redis" ||
+        value.RATE_LIMIT_DRIVER === "redis" ||
+        value.LOCK_DRIVER === "redis") &&
+      (!value.UPSTASH_REDIS_REST_URL || !value.UPSTASH_REDIS_REST_TOKEN)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["UPSTASH_REDIS_REST_URL"],
+        message:
+          "Upstash Redis env vars are required when a Redis-backed driver is enabled.",
+      });
     }
 
     if (
@@ -102,6 +138,21 @@ const envSchema = z
           "NEXT_PUBLIC_TURNSTILE_SITE_KEY is required when TURNSTILE_SECRET_KEY is set.",
       });
     }
+  })
+  .transform((value) => {
+    const hasRedis =
+      value.UPSTASH_REDIS_REST_URL !== undefined &&
+      value.UPSTASH_REDIS_REST_TOKEN !== undefined;
+
+    return {
+      ...value,
+      CACHE_DRIVER: value.CACHE_DRIVER ?? (hasRedis ? "redis" : "noop"),
+      IDEMPOTENCY_DRIVER:
+        value.IDEMPOTENCY_DRIVER ?? (hasRedis ? "redis" : "noop"),
+      RATE_LIMIT_DRIVER:
+        value.RATE_LIMIT_DRIVER ?? (hasRedis ? "redis" : "database"),
+      LOCK_DRIVER: value.LOCK_DRIVER ?? (hasRedis ? "redis" : "noop"),
+    };
   });
 
 export const env = envSchema.parse(process.env);

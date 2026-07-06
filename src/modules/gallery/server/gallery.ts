@@ -14,6 +14,7 @@ import {
   galleryItems,
   storageObjects,
 } from "@/server/db/schema";
+import { invalidateCacheKeys, PUBLIC_CACHE_KEYS } from "@/server/cache";
 import { deleteStoredObjectById } from "@/server/storage/objects";
 
 export async function createGalleryItem({
@@ -58,7 +59,7 @@ export async function createGalleryItem({
     },
   });
 
-  revalidateGallery();
+  await revalidateGallery();
 }
 
 export async function updateGalleryItem({
@@ -103,7 +104,7 @@ export async function updateGalleryItem({
     },
   });
 
-  revalidateGallery();
+  await revalidateGallery();
 }
 
 export async function deleteGalleryItem({
@@ -131,7 +132,7 @@ export async function deleteGalleryItem({
     },
   });
 
-  revalidateGallery();
+  await revalidateGallery();
 }
 
 async function ensureGalleryImageUsable(
@@ -187,9 +188,10 @@ async function getGalleryItemForMutation(galleryItemId: number) {
   return item;
 }
 
-function revalidateGallery(): void {
+async function revalidateGallery(): Promise<void> {
   revalidatePath("/");
   revalidatePath("/gallery");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/gallery");
+  await invalidateCacheKeys([PUBLIC_CACHE_KEYS.gallery]);
 }

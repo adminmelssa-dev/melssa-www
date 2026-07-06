@@ -6,13 +6,22 @@ import {
   desc,
   eq,
 } from "drizzle-orm";
-import type { EventRow } from "@/modules/events/contracts";
+import { z } from "zod";
+import {
+  eventRowSchema,
+  type EventRow,
+} from "@/modules/events/contracts";
 import { db } from "@/server/db";
 import {
   events,
   storageObjects,
   user,
 } from "@/server/db/schema";
+import {
+  getCachedJson,
+  PUBLIC_CACHE_KEYS,
+  PUBLIC_CACHE_TTL_SECONDS,
+} from "@/server/cache";
 
 interface EventListItem {
   id: number;
@@ -107,8 +116,15 @@ export async function getSerializedEvents(): Promise<EventRow[]> {
 }
 
 export async function getSerializedPublishedEvents(): Promise<EventRow[]> {
-  const eventRows = await getPublishedEvents();
-  return eventRows.map((item) => serializeEvent(item));
+  return getCachedJson({
+    key: PUBLIC_CACHE_KEYS.events,
+    load: async () => {
+      const eventRows = await getPublishedEvents();
+      return eventRows.map((item) => serializeEvent(item));
+    },
+    schema: z.array(eventRowSchema),
+    ttlSeconds: PUBLIC_CACHE_TTL_SECONDS,
+  });
 }
 
 function eventSelect() {

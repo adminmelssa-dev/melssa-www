@@ -19,6 +19,7 @@ import {
   lecturers,
   storageObjects,
 } from "@/server/db/schema";
+import { invalidateCacheKeys, PUBLIC_CACHE_KEYS } from "@/server/cache";
 import { deleteStoredObjectById } from "@/server/storage/objects";
 
 export async function createLecturer({
@@ -66,7 +67,7 @@ export async function createLecturer({
     },
   });
 
-  revalidateLecturers();
+  await revalidateLecturers();
 }
 
 export async function updateLecturer({
@@ -119,7 +120,7 @@ export async function updateLecturer({
     },
   });
 
-  revalidateLecturers();
+  await revalidateLecturers();
 }
 
 export async function deleteLecturer({
@@ -149,7 +150,7 @@ export async function deleteLecturer({
     },
   });
 
-  revalidateLecturers();
+  await revalidateLecturers();
 }
 
 async function replaceLecturerCourses(
@@ -247,7 +248,9 @@ async function getLecturerForMutation(lecturerId: number) {
   return lecturer;
 }
 
-function revalidateLecturers(): void {
+async function revalidateLecturers(): Promise<void> {
+  revalidatePath("/lecturers");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/lecturers");
+  await invalidateCacheKeys([PUBLIC_CACHE_KEYS.lecturers]);
 }

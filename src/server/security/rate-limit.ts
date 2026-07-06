@@ -11,6 +11,7 @@ import { ExpectedError } from "@/lib/action-result";
 import { env } from "@/lib/env";
 import { db } from "@/server/db";
 import { publicRateLimits } from "@/server/db/schema";
+import { getRedisClient } from "@/server/redis";
 
 interface PublicRateLimitInput {
   identifier: string;
@@ -19,7 +20,68 @@ interface PublicRateLimitInput {
   windowSeconds: number;
 }
 
-export async function enforcePublicRateLimit({
+const REDIS_RATE_LIMIT_SCRIPT = `
+local current = redis.call("INCR", KEYS[1])
+
+if current == 1 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+
+return current
+`;
+
+export async function enforcePublicRateLimit(
+  input: PublicRateLimitInput,
+): Promise<void> {
+  if (env.RATE_LIMIT_DRIVER === "redis") {
+    try {
+      await enforceRedisPublicRateLimit(input);
+      return;
+    } catch (error) {
+      if (error instanceof ExpectedError) throw error;
+
+      console.error("Redis public rate limit failed. Falling back to database.", {
+        error,
+        scope: input.scope,
+      });
+    }
+  }
+
+  await enforceDatabasePublicRateLimit(input);
+}
+
+async function enforceRedisPublicRateLimit({
+  identifier,
+  limit,
+  scope,
+  windowSeconds,
+}: PublicRateLimitInput): Promise<void> {
+  const redis = getRedisClient();
+
+  if (!redis) {
+    await enforceDatabasePublicRateLimit({
+      identifier,
+      limit,
+      scope,
+      windowSeconds,
+    });
+    return;
+  }
+
+  const count = await redis.eval<[string], number>(
+    REDIS_RATE_LIMIT_SCRIPT,
+    [createRedisRateLimitKey(scope, identifier)],
+    [String(windowSeconds)],
+  );
+
+  if (count > limit) {
+    throw new ExpectedError(
+      "Too many attempts. Wait a few minutes before trying again.",
+    );
+  }
+}
+
+async function enforceDatabasePublicRateLimit({
   identifier,
   limit,
   scope,
@@ -132,4 +194,8 @@ function createRateLimitKey(scope: string, identifier: string): string {
     .update(":")
     .update(identifier)
     .digest("hex");
+}
+
+function createRedisRateLimitKey(scope: string, identifier: string): string {
+  return `melssa:rate-limit:${createRateLimitKey(scope, identifier)}`;
 }

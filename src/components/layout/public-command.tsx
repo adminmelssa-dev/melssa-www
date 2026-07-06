@@ -47,7 +47,7 @@ const sections: JumpItem[] = [
 ];
 
 const more: JumpItem[] = [
-  { label: "Manifesto — A Voice for All", href: "/manifesto", icon: ScrollText },
+  { label: "Manifesto — Kirstin Ankrah", href: "/manifesto", icon: ScrollText },
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 ];
 

@@ -2,7 +2,7 @@ import Image from "next/image";
 import { Clock, Mail, MapPin, Phone, Users } from "lucide-react";
 import { PublicPageHeader } from "@/components/public/public-page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getSerializedLecturers } from "@/modules/lecturers/queries";
+import { getCachedSerializedLecturers } from "@/modules/lecturers/queries";
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -13,7 +13,7 @@ function initials(name: string): string {
 }
 
 export async function LecturersPublicPage() {
-  const lecturers = await getSerializedLecturers();
+  const lecturers = await getCachedSerializedLecturers();
 
   return (
     <div className="mx-auto max-w-6xl px-7 py-16">

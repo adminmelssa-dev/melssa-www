@@ -5,11 +5,13 @@ import {
   asc,
   eq,
 } from "drizzle-orm";
+import { z } from "zod";
 import type {
   LecturerCourse,
   LecturerPhoto,
   LecturerRow,
 } from "@/modules/lecturers/contracts";
+import { lecturerRowSchema } from "@/modules/lecturers/contracts";
 import { db } from "@/server/db";
 import {
   courses,
@@ -17,6 +19,11 @@ import {
   lecturers,
   storageObjects,
 } from "@/server/db/schema";
+import {
+  getCachedJson,
+  PUBLIC_CACHE_KEYS,
+  PUBLIC_CACHE_TTL_SECONDS,
+} from "@/server/cache";
 
 interface LecturerListItem {
   id: number;
@@ -132,4 +139,13 @@ export function serializeLecturer(item: LecturerListItem): LecturerRow {
 export async function getSerializedLecturers(): Promise<LecturerRow[]> {
   const lecturerRows = await getLecturers();
   return lecturerRows.map((item) => serializeLecturer(item));
+}
+
+export async function getCachedSerializedLecturers(): Promise<LecturerRow[]> {
+  return getCachedJson({
+    key: PUBLIC_CACHE_KEYS.lecturers,
+    load: getSerializedLecturers,
+    schema: z.array(lecturerRowSchema),
+    ttlSeconds: PUBLIC_CACHE_TTL_SECONDS,
+  });
 }

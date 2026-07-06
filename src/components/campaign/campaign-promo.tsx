@@ -89,7 +89,7 @@ export function CampaignPromo() {
               />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-deep via-navy-deep/70 to-transparent px-7 pt-20 pb-7">
                 <div className="text-[10.5px] font-semibold uppercase tracking-[0.2em] text-gold-bright">
-                  Candidate · Public Relations Officer
+                  Candidate · Financial Officer
                 </div>
                 <div className="mt-1.5 font-heading text-[1.7rem] leading-tight text-cream">
                   Kirstin Austin Ankrah
@@ -117,7 +117,7 @@ export function CampaignPromo() {
                 <strong className="font-semibold text-foreground">
                   Kirstin Austin Ankrah
                 </strong>{" "}
-                as Public Relations Officer helps carry it to completion.
+                as Financial Officer helps carry it to completion.
               </DialogDescription>
 
               <ul style={rise(340)} className="mt-7 space-y-2.5">

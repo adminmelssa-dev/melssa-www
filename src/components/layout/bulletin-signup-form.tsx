@@ -7,6 +7,9 @@ import { actionResultSchema } from "@/lib/action-result";
 
 export function BulletinSignupForm() {
   const [email, setEmail] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState(() =>
+    createClientIdempotencyKey(),
+  );
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,6 +26,7 @@ export function BulletinSignupForm() {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
         },
         method: "POST",
       });
@@ -34,6 +38,7 @@ export function BulletinSignupForm() {
 
       if (result.ok && response.ok) {
         setEmail("");
+        setIdempotencyKey(createClientIdempotencyKey());
       }
     } catch {
       setMessage("Subscription failed.");
@@ -84,4 +89,8 @@ export function BulletinSignupForm() {
       </p>
     </div>
   );
+}
+
+function createClientIdempotencyKey(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 }

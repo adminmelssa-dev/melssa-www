@@ -6,14 +6,19 @@ import {
 } from "@/modules/bulletin/server/subscriptions";
 import { errorResult, successResult } from "@/lib/action-result";
 import {
+  createPublicIdempotencyKey,
+  withPublicIdempotency,
+} from "@/server/idempotency";
+import {
   enforcePublicRateLimit,
   getRateLimitIdentifierFromRequest,
 } from "@/server/security/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const rateLimitIdentifier = getRateLimitIdentifierFromRequest(request);
     await enforcePublicRateLimit({
-      identifier: getRateLimitIdentifierFromRequest(request),
+      identifier: rateLimitIdentifier,
       limit: 8,
       scope: "bulletin.subscribe.ip",
       windowSeconds: 10 * 60,
@@ -29,7 +34,17 @@ export async function POST(request: Request) {
       windowSeconds: 60 * 60,
     });
 
-    const result = await subscribeToBulletin(input);
+    const idempotencyKey = createPublicIdempotencyKey({
+      fallbackParts: [rateLimitIdentifier, input.email, input.source],
+      request,
+      scope: "bulletin.subscribe",
+    });
+    const result = await withPublicIdempotency({
+      duplicateMessage: "This subscription request is already being processed.",
+      key: idempotencyKey,
+      run: () => subscribeToBulletin(input),
+      ttlSeconds: 5 * 60,
+    });
 
     return NextResponse.json(successResult(getSubscriptionMessage(result)));
   } catch (error) {

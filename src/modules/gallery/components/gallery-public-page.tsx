@@ -3,10 +3,10 @@ import { Image as ImageIcon } from "lucide-react";
 import { PublicPageHeader } from "@/components/public/public-page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { GALLERY_ITEM_TYPE_LABELS } from "@/modules/gallery/contracts";
-import { getSerializedGalleryItems } from "@/modules/gallery/queries";
+import { getCachedSerializedGalleryItems } from "@/modules/gallery/queries";
 
 export async function GalleryPublicPage() {
-  const galleryItems = await getSerializedGalleryItems();
+  const galleryItems = await getCachedSerializedGalleryItems();
 
   return (
     <div className="mx-auto max-w-6xl px-7 py-16">

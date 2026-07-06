@@ -15,6 +15,7 @@ import {
   storageObjects,
   studentSpotlights,
 } from "@/server/db/schema";
+import { invalidateCacheKeys, PUBLIC_CACHE_KEYS } from "@/server/cache";
 import { deleteStoredObjectById } from "@/server/storage/objects";
 
 export async function createSpotlight({
@@ -59,7 +60,7 @@ export async function createSpotlight({
     },
   });
 
-  revalidateSpotlights();
+  await revalidateSpotlights();
 }
 
 export async function updateSpotlight({
@@ -115,7 +116,7 @@ export async function updateSpotlight({
     },
   });
 
-  revalidateSpotlights();
+  await revalidateSpotlights();
 }
 
 export async function deleteSpotlight({
@@ -147,7 +148,7 @@ export async function deleteSpotlight({
     },
   });
 
-  revalidateSpotlights();
+  await revalidateSpotlights();
 }
 
 async function ensureSpotlightPhotoUsable(
@@ -205,9 +206,10 @@ async function getSpotlightForMutation(spotlightId: number) {
   return spotlight;
 }
 
-function revalidateSpotlights(): void {
+async function revalidateSpotlights(): Promise<void> {
   revalidatePath("/");
   revalidatePath("/spotlight");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/spotlight");
+  await invalidateCacheKeys([PUBLIC_CACHE_KEYS.spotlights]);
 }
