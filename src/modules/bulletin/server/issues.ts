@@ -2,6 +2,7 @@ import "server-only";
 
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
+import sanitizeHtml from "sanitize-html";
 import {
   createBulletinIssueInputSchema,
   type ArchiveBulletinIssueInput,
@@ -41,16 +42,17 @@ export async function createBulletinIssue({
   input: CreateBulletinIssueInput;
 }): Promise<void> {
   const now = new Date();
+  const sanitizedInput = sanitizeBulletinIssueInput(input);
 
   const [createdIssue] = await db
     .insert(bulletinIssues)
     .values({
-      title: input.title,
-      subject: input.subject,
-      previewText: input.previewText,
-      editorNote: input.editorNote,
-      sections: input.sections,
-      audienceTags: input.audienceTags,
+      title: sanitizedInput.title,
+      subject: sanitizedInput.subject,
+      previewText: sanitizedInput.previewText,
+      editorNote: sanitizedInput.editorNote,
+      sections: sanitizedInput.sections,
+      audienceTags: sanitizedInput.audienceTags,
       createdById: actorUserId,
       updatedById: actorUserId,
       createdAt: now,
@@ -73,7 +75,7 @@ export async function createBulletinIssue({
     summary: `Created bulletin ${createdIssue.title}.`,
     metadata: {
       title: createdIssue.title,
-      sectionCount: input.sections.length,
+      sectionCount: sanitizedInput.sections.length,
     },
   });
 
@@ -96,16 +98,17 @@ export async function updateBulletinIssue({
   }
 
   const now = new Date();
+  const sanitizedInput = sanitizeBulletinIssueInput(input);
 
   await db
     .update(bulletinIssues)
     .set({
-      title: input.title,
-      subject: input.subject,
-      previewText: input.previewText,
-      editorNote: input.editorNote,
-      sections: input.sections,
-      audienceTags: input.audienceTags,
+      title: sanitizedInput.title,
+      subject: sanitizedInput.subject,
+      previewText: sanitizedInput.previewText,
+      editorNote: sanitizedInput.editorNote,
+      sections: sanitizedInput.sections,
+      audienceTags: sanitizedInput.audienceTags,
       updatedById: actorUserId,
       updatedAt: now,
     })
@@ -116,11 +119,11 @@ export async function updateBulletinIssue({
     action: "bulletin.update",
     entityType: "bulletin_issue",
     entityId: input.bulletinId,
-    summary: `Updated bulletin ${input.title}.`,
+    summary: `Updated bulletin ${sanitizedInput.title}.`,
     metadata: {
       previousTitle: existingIssue.title,
-      nextTitle: input.title,
-      sectionCount: input.sections.length,
+      nextTitle: sanitizedInput.title,
+      sectionCount: sanitizedInput.sections.length,
     },
   });
 
@@ -316,6 +319,46 @@ function getDeliveryErrorMessage(error: unknown): string {
   }
 
   return "Delivery failed.";
+}
+
+function sanitizeBulletinIssueInput<TInput extends CreateBulletinIssueInput>(
+  input: TInput,
+): TInput {
+  return {
+    ...input,
+    editorNote: sanitizeBulletinRichText(input.editorNote),
+    sections: input.sections.map((section) => ({
+      ...section,
+      body: sanitizeBulletinRichText(section.body),
+    })),
+  };
+}
+
+function sanitizeBulletinRichText(value: string): string {
+  return sanitizeHtml(value, {
+    allowedAttributes: {
+      a: ["href", "rel", "target"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    allowedTags: [
+      "a",
+      "blockquote",
+      "br",
+      "em",
+      "li",
+      "ol",
+      "p",
+      "strong",
+      "ul",
+    ],
+    disallowedTagsMode: "discard",
+    transformTags: {
+      a: sanitizeHtml.simpleTransform("a", {
+        rel: "noreferrer",
+        target: "_blank",
+      }),
+    },
+  }).trim();
 }
 
 function revalidateBulletins(): void {

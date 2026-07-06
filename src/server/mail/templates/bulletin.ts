@@ -1,5 +1,6 @@
 import "server-only";
 
+import sanitizeHtml from "sanitize-html";
 import {
   emailBase,
   emailButton,
@@ -55,7 +56,7 @@ export function bulletinIssueTemplate({
     preheader: previewText ?? title,
     body: [
       emailHeading("Weekly Bulletin", title),
-      richParagraph(editorNote),
+      richTextBlock(editorNote),
       sections.map((section) => bulletinSection(section)).join(""),
       emailButton("Open the portal", portalUrl),
       emailDivider(),
@@ -77,13 +78,66 @@ function bulletinSection(section: BulletinSection): string {
       <h2 style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:400;line-height:1.2;color:#182338;">
         ${escapeHtml(section.heading)}
       </h2>
-      ${richParagraph(section.body)}
+      ${richTextBlock(section.body)}
     </td>
   </tr>
 </table>`;
 }
 
-function richParagraph(value: string): string {
+function richTextBlock(value: string): string {
+  if (!looksLikeHtml(value)) {
+    return plainTextParagraphs(value);
+  }
+
+  return sanitizeHtml(value, {
+    allowedAttributes: {
+      a: ["href", "rel", "style", "target"],
+      blockquote: ["style"],
+      li: ["style"],
+      ol: ["style"],
+      p: ["style"],
+      ul: ["style"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    allowedTags: [
+      "a",
+      "blockquote",
+      "br",
+      "em",
+      "li",
+      "ol",
+      "p",
+      "strong",
+      "ul",
+    ],
+    disallowedTagsMode: "discard",
+    transformTags: {
+      a: sanitizeHtml.simpleTransform("a", {
+        rel: "noreferrer",
+        style: "color:#0E2A54;text-decoration:underline;",
+        target: "_blank",
+      }),
+      blockquote: sanitizeHtml.simpleTransform("blockquote", {
+        style:
+          "margin:18px 0;border-left:3px solid #B9862B;padding-left:14px;color:#182338;font-family:Georgia,'Times New Roman',serif;font-size:18px;line-height:1.55;",
+      }),
+      li: sanitizeHtml.simpleTransform("li", {
+        style: "margin:0 0 8px;font-size:15px;line-height:1.72;color:#182338;",
+      }),
+      ol: sanitizeHtml.simpleTransform("ol", {
+        style: "margin:0 0 14px 20px;padding:0;",
+      }),
+      p: sanitizeHtml.simpleTransform("p", {
+        style: "margin:0 0 14px;font-size:15px;line-height:1.72;color:#182338;",
+      }),
+      ul: sanitizeHtml.simpleTransform("ul", {
+        style: "margin:0 0 14px 20px;padding:0;",
+      }),
+    },
+  });
+}
+
+function plainTextParagraphs(value: string): string {
   const lines = escapeHtml(value)
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.replace(/\n/g, "<br />"));
@@ -95,6 +149,10 @@ function richParagraph(value: string): string {
 </p>`,
     )
     .join("");
+}
+
+function looksLikeHtml(value: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(value);
 }
 
 function unsubscribeLine(unsubscribeUrl: string): string {

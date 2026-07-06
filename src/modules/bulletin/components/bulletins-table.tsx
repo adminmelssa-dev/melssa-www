@@ -46,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { BulletinRichTextEditor } from "@/modules/bulletin/components/bulletin-rich-text-editor";
 import {
   BULLETIN_SECTION_CATEGORY_LABELS,
   BULLETIN_SECTION_CATEGORY_OPTIONS,
@@ -55,6 +55,7 @@ import {
   adminBulletinsResponseSchema,
   bulletinSectionCategorySchema,
   createBulletinIssueInputSchema,
+  getBulletinRichTextPlainText,
   type AdminBulletinMutation,
   type AdminBulletinsResponse,
   type BulletinIssueRow,
@@ -409,12 +410,13 @@ function BulletinForm({
               <Input
                 id="bulletin-title"
                 maxLength={255}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const title = event.currentTarget.value;
                   setValues((current) => ({
                     ...current,
-                    title: event.currentTarget.value,
-                  }))
-                }
+                    title,
+                  }));
+                }}
                 placeholder="Week 7 lab brief"
                 value={values.title}
               />
@@ -425,12 +427,13 @@ function BulletinForm({
               <Input
                 id="bulletin-subject"
                 maxLength={180}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const subject = event.currentTarget.value;
                   setValues((current) => ({
                     ...current,
-                    subject: event.currentTarget.value,
-                  }))
-                }
+                    subject,
+                  }));
+                }}
                 placeholder="MELSSA Weekly Bulletin: practicals, events, resources"
                 value={values.subject}
               />
@@ -441,12 +444,13 @@ function BulletinForm({
               <Input
                 id="bulletin-preview"
                 maxLength={255}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const previewText = event.currentTarget.value;
                   setValues((current) => ({
                     ...current,
-                    previewText: event.currentTarget.value,
-                  }))
-                }
+                    previewText,
+                  }));
+                }}
                 placeholder="A short line shown beside the subject in inboxes"
                 value={values.previewText}
               />
@@ -456,12 +460,13 @@ function BulletinForm({
               <Label htmlFor="bulletin-tags">Audience tags</Label>
               <Input
                 id="bulletin-tags"
-                onChange={(event) =>
+                onChange={(event) => {
+                  const audienceTags = event.currentTarget.value;
                   setValues((current) => ({
                     ...current,
-                    audienceTags: event.currentTarget.value,
-                  }))
-                }
+                    audienceTags,
+                  }));
+                }}
                 placeholder="students, academic-week, congress"
                 value={values.audienceTags}
               />
@@ -469,15 +474,14 @@ function BulletinForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bulletin-editor-note">Editor note</Label>
-            <Textarea
-              className="min-h-28"
-              id="bulletin-editor-note"
-              maxLength={4_000}
-              onChange={(event) =>
+            <Label>Editor note</Label>
+            <BulletinRichTextEditor
+              aria-label="Editor note"
+              disabled={isPending}
+              onChange={(editorNote) =>
                 setValues((current) => ({
                   ...current,
-                  editorNote: event.currentTarget.value,
+                  editorNote,
                 }))
               }
               placeholder="Open with the context students need for the week."
@@ -532,12 +536,13 @@ function BulletinForm({
                   <Input
                     aria-label={`Section ${index + 1} heading`}
                     maxLength={120}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const heading = event.currentTarget.value;
                       updateSection(index, (current) => ({
                         ...current,
-                        heading: event.currentTarget.value,
-                      }))
-                    }
+                        heading,
+                      }));
+                    }}
                     placeholder="Section heading"
                     value={section.heading}
                   />
@@ -552,14 +557,13 @@ function BulletinForm({
                     <Trash2 className="size-4" />
                   </Button>
                 </div>
-                <Textarea
+                <BulletinRichTextEditor
                   aria-label={`Section ${index + 1} body`}
-                  className="min-h-24"
-                  maxLength={2_500}
-                  onChange={(event) =>
+                  disabled={isPending}
+                  onChange={(body) =>
                     updateSection(index, (current) => ({
                       ...current,
-                      body: event.currentTarget.value,
+                      body,
                     }))
                   }
                   placeholder="Write the update in clear, student-facing language."
@@ -599,7 +603,10 @@ function BulletinPreview({ values }: { values: BulletinFormValues }) {
       <div className="space-y-3 py-4">
         <PreviewBlock
           label="Editor note"
-          value={values.editorNote || "Opening context for the week."}
+          value={
+            getBulletinRichTextPlainText(values.editorNote) ||
+            "Opening context for the week."
+          }
         />
         {values.sections.map((section, index) => (
           <PreviewBlock

@@ -11,6 +11,37 @@ const trimmedOptionalString = z
   .trim()
   .transform((value) => (value.length > 0 ? value : null));
 
+const bulletinRichTextSchema = ({
+  maxHtml,
+  maxText,
+  minText,
+}: {
+  maxHtml: number;
+  maxText: number;
+  minText: number;
+}) =>
+  z
+    .string()
+    .trim()
+    .max(maxHtml)
+    .superRefine((value, ctx) => {
+      const plainText = getBulletinRichTextPlainText(value);
+
+      if (plainText.length < minText) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Enter at least ${minText} characters of text.`,
+        });
+      }
+
+      if (plainText.length > maxText) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Keep the text under ${maxText} characters.`,
+        });
+      }
+    });
+
 export const bulletinSubscriptionSourceSchema = z
   .string()
   .trim()
@@ -80,7 +111,11 @@ export const BULLETIN_SECTION_CATEGORY_OPTIONS = [
 
 export const bulletinSectionSchema = z.object({
   heading: z.string().trim().min(3).max(120),
-  body: z.string().trim().min(20).max(2_500),
+  body: bulletinRichTextSchema({
+    maxHtml: 12_000,
+    maxText: 2_500,
+    minText: 20,
+  }),
   category: bulletinSectionCategorySchema,
 });
 
@@ -98,7 +133,11 @@ export const createBulletinIssueInputSchema = z.object({
   title: z.string().trim().min(3).max(255),
   subject: z.string().trim().min(5).max(180),
   previewText: trimmedOptionalString.pipe(z.string().max(255).nullable()),
-  editorNote: z.string().trim().min(20).max(4_000),
+  editorNote: bulletinRichTextSchema({
+    maxHtml: 16_000,
+    maxText: 4_000,
+    minText: 20,
+  }),
   sections: z.array(bulletinSectionSchema).min(1).max(8),
   audienceTags: z.array(bulletinAudienceTagSchema).max(12).default([]),
 });
@@ -215,3 +254,18 @@ export type BulletinUnsubscribeInput = z.infer<
 export type BulletinUnsubscribePreview = z.infer<
   typeof bulletinUnsubscribePreviewSchema
 >;
+
+export function getBulletinRichTextPlainText(value: string): string {
+  return value
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
