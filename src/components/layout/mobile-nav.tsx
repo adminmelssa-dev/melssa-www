@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { LayoutDashboard, Menu } from "lucide-react";
 import {
   Sheet,
@@ -12,12 +11,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { isNavItemActive, publicNavItems } from "@/components/layout/nav-items";
+import { MobileNavGroups } from "@/components/layout/nav-links";
 
 /** Slide-in primary navigation for small screens. */
 export function MobileNav() {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
@@ -33,32 +30,15 @@ export function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[min(20rem,85vw)] gap-0 px-0">
-        <SheetHeader className="px-6">
+        <SheetHeader className="px-5">
           <SheetTitle className="font-heading text-xl tracking-[0.06em]">
             MELSSA
           </SheetTitle>
         </SheetHeader>
-        <nav className="mt-2 flex flex-col border-t border-hairline">
-          {publicNavItems.map((item) => {
-            const active = isNavItemActive(item.href, pathname);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "border-b border-hairline px-6 py-4 font-heading text-lg transition-colors",
-                  active
-                    ? "text-gold-ink"
-                    : "text-foreground hover:text-gold-ink",
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="mt-2 flex-1 overflow-y-auto border-t border-hairline px-3 py-3">
+          <MobileNavGroups onClose={() => setOpen(false)} />
         </nav>
-        <div className="px-6 py-6">
+        <div className="border-t border-hairline px-5 py-5">
           <Button asChild variant="gold" className="w-full rounded-full">
             <Link href="/dashboard" onClick={() => setOpen(false)}>
               <LayoutDashboard className="size-4" />

@@ -8,6 +8,7 @@ import type {
   UpdateAdminUserVerificationInput,
 } from "@/modules/auth/contracts";
 import { ROLE_LABELS, ROLES } from "@/modules/auth/roles";
+import { ExpectedError } from "@/lib/action-result";
 import { writeAuditLog } from "@/server/audit/log";
 import { db } from "@/server/db";
 import { session, user } from "@/server/db/schema";
@@ -20,7 +21,7 @@ export async function setAdminUserRole({
   input: UpdateAdminUserRoleInput;
 }): Promise<void> {
   if (actorUserId === input.userId && input.role !== ROLES.SITE_ADMIN) {
-    throw new Error("You cannot remove your own site admin role.");
+    throw new ExpectedError("You cannot remove your own site admin role.");
   }
 
   const targetUser = await getUserForMutation(input.userId);
@@ -58,7 +59,7 @@ export async function setAdminUserAccess({
   input: UpdateAdminUserAccessInput;
 }): Promise<void> {
   if (actorUserId === input.userId && input.intent === "ban") {
-    throw new Error("You cannot restrict your own account.");
+    throw new ExpectedError("You cannot restrict your own account.");
   }
 
   const targetUser = await getUserForMutation(input.userId);
@@ -146,7 +147,7 @@ async function getUserForMutation(userId: string) {
     .limit(1);
 
   if (!targetUser) {
-    throw new Error("User not found.");
+    throw new ExpectedError("User not found.");
   }
 
   return targetUser;

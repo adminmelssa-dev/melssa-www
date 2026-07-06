@@ -17,7 +17,7 @@ export function successResult(message: string): ActionResult {
 }
 
 export function errorResult(error: unknown, fallback: string): ActionResult {
-  if (error instanceof Error && error.message) {
+  if (error instanceof ExpectedError && error.message) {
     return { ok: false, message: error.message };
   }
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MelssaWordmark } from "@/components/brand/melssa-wordmark";
-import { MainNav } from "@/components/layout/main-nav";
+import { DesktopNav } from "@/components/layout/nav-links";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { PublicCommand } from "@/components/layout/public-command";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export function Header() {
         />
         <div className="mx-auto flex h-full max-w-6xl items-center gap-8 px-7">
           <MelssaWordmark />
-          <MainNav />
+          <DesktopNav />
 
           <div className="ml-auto flex items-center gap-3">
             <button

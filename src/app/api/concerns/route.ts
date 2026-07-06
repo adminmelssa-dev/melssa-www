@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { createConcernInputSchema } from "@/modules/concerns/contracts";
 import { createConcern } from "@/modules/concerns/server/concerns";
 import { verifyTurnstileToken } from "@/server/security/turnstile";
-import { errorResult, successResult } from "@/lib/action-result";
+import {
+  errorResult,
+  ExpectedError,
+  successResult,
+} from "@/lib/action-result";
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +19,7 @@ export async function POST(request: Request) {
     if (!verified) {
       return NextResponse.json(
         errorResult(
-          new Error("Security check failed. Please try again."),
+          new ExpectedError("Security check failed. Please try again."),
           "Security check failed.",
         ),
         { status: 400 },

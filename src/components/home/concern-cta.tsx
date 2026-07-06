@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kicker } from "@/components/ui/kicker";
 import { Reveal } from "@/components/ui/reveal";
+import { ConcernTutorial } from "@/modules/concerns/components/concern-tutorial";
 
 /** Closing dark band inviting anonymous concerns. */
 export function ConcernCta() {
@@ -33,13 +34,7 @@ export function ConcernCta() {
               <ArrowRight className="size-4" />
             </Link>
           </Button>
-          <Button
-            asChild
-            variant="outline"
-            className="h-11 rounded-full border-cream/30 bg-transparent px-6 text-cream hover:bg-cream hover:text-ink-deep"
-          >
-            <Link href="/concerns">How it works</Link>
-          </Button>
+          <ConcernTutorial triggerClassName="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-cream/30 bg-transparent px-6 text-sm font-semibold text-cream transition-colors hover:bg-cream hover:text-ink-deep" />
         </div>
       </Reveal>
     </section>

@@ -63,3 +63,34 @@ export function DataTableSkeleton({
     </div>
   );
 }
+
+export function PublicPageSkeleton() {
+  return (
+    <div className="mx-auto max-w-6xl px-7 py-16">
+      <div className="border-b border-hairline pb-10">
+        <Skeleton className="h-3 w-36" />
+        <Skeleton className="mt-5 h-14 w-full max-w-xl" />
+        <Skeleton className="mt-4 h-5 w-full max-w-2xl" />
+      </div>
+
+      <div className="mt-12 grid gap-8 lg:grid-cols-[1.45fr_0.75fr]">
+        <div className="space-y-8">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div className="border-b border-hairline pb-8" key={index}>
+              <Skeleton className="h-3 w-44" />
+              <Skeleton className="mt-4 h-8 w-full max-w-lg" />
+              <Skeleton className="mt-3 h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-4/5" />
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          <Skeleton className="aspect-[4/3] w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+      </div>
+    </div>
+  );
+}
