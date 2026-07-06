@@ -116,7 +116,7 @@ function isGroupActive(group: NavGroup, pathname: string): boolean {
 }
 
 const triggerBase =
-  "h-9 rounded-md bg-transparent px-3 text-[13.5px] font-medium transition-colors hover:bg-paper-3 hover:text-foreground focus:bg-paper-3 data-[state=open]:bg-paper-3 data-[state=open]:text-foreground data-[active=true]:bg-transparent";
+  "h-9 rounded-md bg-transparent px-3 text-[13.5px] font-medium transition-colors hover:bg-paper-3 hover:text-foreground focus:bg-paper-3 data-[state=open]:bg-paper-3 data-[state=open]:text-foreground data-active:bg-transparent! data-active:hover:bg-paper-3!";
 
 /* ---------------- Desktop ---------------- */
 
@@ -126,7 +126,7 @@ function LeafItem({ item, pathname }: { item: NavLeaf; pathname: string }) {
       <NavigationMenuLink asChild active={isActive(item.href, pathname)}>
         <Link
           href={item.href}
-          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-paper-3 data-[active=true]:bg-paper-3"
+          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-paper-3 data-active:bg-paper-3"
         >
           <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-md bg-gold-soft text-gold-ink">
             <item.icon className="size-4" />
