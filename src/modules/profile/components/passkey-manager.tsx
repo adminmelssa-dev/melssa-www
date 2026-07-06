@@ -13,13 +13,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ProfileSection } from "@/modules/profile/components/profile-ui";
 import type { PasskeyListItem } from "@/modules/profile/contracts";
 import { authClient } from "@/modules/auth/client";
 
@@ -64,7 +58,6 @@ export function PasskeyManager({ passkeys }: PasskeyManagerProps) {
     }
 
     setAdding(true);
-
     try {
       const result = await authClient.passkey.addPasskey({
         name: "MELSSA passkey",
@@ -92,12 +85,10 @@ export function PasskeyManager({ passkeys }: PasskeyManagerProps) {
 
   async function handleRename() {
     if (!renameTarget) return;
-
     const name = renameValue.trim();
     if (name.length === 0) return;
 
     setRenaming(true);
-
     const result = await authClient.passkey.updatePasskey({
       id: renameTarget.id,
       name,
@@ -119,7 +110,6 @@ export function PasskeyManager({ passkeys }: PasskeyManagerProps) {
     if (!deleteTarget) return;
 
     setDeleting(true);
-
     const result = await authClient.passkey.deletePasskey({
       id: deleteTarget.id,
     });
@@ -137,107 +127,105 @@ export function PasskeyManager({ passkeys }: PasskeyManagerProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="border-b">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-              <Fingerprint className="size-4" />
-            </span>
-            <div>
-              <CardTitle>Passkeys</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Sign in with your device, browser, or security key.
-              </p>
-            </div>
-          </div>
-          {passkeys.length > 0 ? (
-            <Button onClick={handleAdd} disabled={adding} size="sm">
-              {adding ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Plus className="size-4" />
-              )}
-              {adding ? "Waiting..." : "Add passkey"}
-            </Button>
-          ) : null}
-        </div>
-      </CardHeader>
-
+    <ProfileSection
+      title="Passkeys"
+      description="Sign in with your device, browser, or security key."
+      action={
+        passkeys.length > 0 ? (
+          <Button
+            onClick={handleAdd}
+            disabled={adding}
+            size="sm"
+            variant="gold"
+            className="rounded-full"
+          >
+            {adding ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )}
+            {adding ? "Waiting…" : "Add passkey"}
+          </Button>
+        ) : null
+      }
+    >
       {passkeys.length === 0 ? (
-        <CardContent>
-          <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <ShieldCheck className="size-6" />
-            </span>
-            <div>
-              <p className="font-medium">No passkeys yet</p>
-              <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-                Add a passkey to sign in faster without relying only on your
-                password.
-              </p>
-            </div>
-            <Button onClick={handleAdd} disabled={adding}>
-              {adding ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Plus className="size-4" />
-              )}
-              {adding ? "Waiting..." : "Add passkey"}
-            </Button>
+        <div className="flex flex-col items-center gap-4 border-y border-hairline py-14 text-center">
+          <span className="grid size-12 place-items-center rounded-full border border-gold/60 text-gold-ink">
+            <ShieldCheck className="size-5" />
+          </span>
+          <div>
+            <h3 className="text-lg">No passkeys yet</h3>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+              Add a passkey to sign in faster without relying only on your
+              password.
+            </p>
           </div>
-        </CardContent>
+          <Button
+            onClick={handleAdd}
+            disabled={adding}
+            variant="gold"
+            className="rounded-full"
+          >
+            {adding ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )}
+            {adding ? "Waiting…" : "Add passkey"}
+          </Button>
+        </div>
       ) : (
         <>
-          <CardContent className="p-0">
-            <ul className="divide-y">
-              {passkeys.map((passkey) => (
-                <li
-                  className="flex items-center gap-3 px-4 py-3.5"
-                  key={passkey.id}
-                >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    {passkey.backedUp ? (
-                      <Fingerprint className="size-4" />
-                    ) : (
-                      <KeyRound className="size-4" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{passkey.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {passkey.backedUp ? "Synced" : "Device-bound"} · Added{" "}
-                      {passkey.createdAtLabel}
-                    </p>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="size-8" size="icon" variant="ghost">
-                        <MoreVertical className="size-4" />
-                        <span className="sr-only">Passkey actions</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => openRename(passkey)}>
-                        <Pencil className="size-4" />
-                        Rename
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onSelect={() => setDeleteTarget(passkey)}
-                      >
-                        <Trash2 className="size-4" />
-                        Remove
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter className="text-xs text-muted-foreground">
+          <div className="border-t border-hairline">
+            {passkeys.map((passkey) => (
+              <div
+                className="flex items-center gap-3 border-b border-hairline py-3.5"
+                key={passkey.id}
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-md bg-gold-soft text-gold-ink">
+                  {passkey.backedUp ? (
+                    <Fingerprint className="size-4" />
+                  ) : (
+                    <KeyRound className="size-4" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground">
+                    {passkey.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {passkey.backedUp ? "Synced" : "Device-bound"} · Added{" "}
+                    {passkey.createdAtLabel}
+                  </p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="size-8" size="icon" variant="ghost">
+                      <MoreVertical className="size-4" />
+                      <span className="sr-only">Passkey actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => openRename(passkey)}>
+                      <Pencil className="size-4" />
+                      Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => setDeleteTarget(passkey)}
+                    >
+                      <Trash2 className="size-4" />
+                      Remove
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
             Removing a passkey only affects sign-in with that credential.
-          </CardFooter>
+          </p>
         </>
       )}
 
@@ -276,10 +264,15 @@ export function PasskeyManager({ passkeys }: PasskeyManagerProps) {
                 onClick={() => setRenameTarget(null)}
                 type="button"
                 variant="outline"
+                className="rounded-full"
               >
                 Cancel
               </Button>
-              <Button disabled={renaming || renameValue.trim().length === 0}>
+              <Button
+                variant="gold"
+                className="rounded-full"
+                disabled={renaming || renameValue.trim().length === 0}
+              >
                 {renaming ? <Loader2 className="size-4 animate-spin" /> : null}
                 Save
               </Button>
@@ -307,6 +300,7 @@ export function PasskeyManager({ passkeys }: PasskeyManagerProps) {
               onClick={() => setDeleteTarget(null)}
               type="button"
               variant="outline"
+              className="rounded-full"
             >
               Cancel
             </Button>
@@ -315,6 +309,7 @@ export function PasskeyManager({ passkeys }: PasskeyManagerProps) {
               onClick={() => void handleDelete()}
               type="button"
               variant="destructive"
+              className="rounded-full"
             >
               {deleting ? <Loader2 className="size-4 animate-spin" /> : null}
               Remove
@@ -322,6 +317,6 @@ export function PasskeyManager({ passkeys }: PasskeyManagerProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </ProfileSection>
   );
 }

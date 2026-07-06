@@ -16,14 +16,14 @@ import {
 } from "@/modules/resources/contracts";
 import { getSerializedPublishedResources } from "@/modules/resources/queries";
 import { formatBytes } from "@/lib/format-bytes";
-import { requirePermission } from "@/server/auth/guards";
+import { requireAuth } from "@/server/auth/guards";
 
 const dateFormatter = new Intl.DateTimeFormat("en", {
   dateStyle: "medium",
 });
 
 export async function ResourcesStudentPage() {
-  await requirePermission({ resource: "resource", action: "read" });
+  await requireAuth();
   const resources = await getSerializedPublishedResources();
   const stats = getResourceStats(resources);
 

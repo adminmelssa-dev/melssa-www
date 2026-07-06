@@ -16,7 +16,7 @@ export default async function DashboardProfilePage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-10">
       <DashboardPageHeader
         description="Manage your account identity, password, and passwordless sign-in."
         kicker="Account"

@@ -3,20 +3,17 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Save, UserRound } from "lucide-react";
+import { Lock, Save } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PasswordStrengthMeter } from "@/modules/auth/components/password-strength-meter";
 import { authClient } from "@/modules/auth/client";
+import {
+  ProfilePanel,
+  ProfileSection,
+  profileFieldControl,
+  profileFieldLabel,
+} from "@/modules/profile/components/profile-ui";
 
 interface ProfileFormProps {
   userName: string;
@@ -42,7 +39,6 @@ export function ProfileForm({ userName, userEmail }: ProfileFormProps) {
     }
 
     setSavingProfile(true);
-
     const result = await authClient.updateUser({ name: normalizedName });
 
     if (result.error) {
@@ -71,7 +67,6 @@ export function ProfileForm({ userName, userEmail }: ProfileFormProps) {
     }
 
     setChangingPassword(true);
-
     const result = await authClient.changePassword({
       currentPassword,
       newPassword,
@@ -92,72 +87,66 @@ export function ProfileForm({ userName, userEmail }: ProfileFormProps) {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
-      <Card>
-        <CardHeader className="border-b">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-              <UserRound className="size-4" />
-            </span>
-            <div>
-              <CardTitle>Profile</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Keep your account identity current.
-              </p>
-            </div>
-          </div>
-        </CardHeader>
+    <div className="grid gap-10 xl:grid-cols-2">
+      <ProfileSection
+        title="Identity"
+        description="Keep your account details current."
+      >
         <form onSubmit={handleProfileSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="profile-email">Email</Label>
-              <Input
+          <ProfilePanel>
+            <div className="border-b border-hairline p-5">
+              <label htmlFor="profile-email" className={profileFieldLabel}>
+                Email
+              </label>
+              <input
                 id="profile-email"
                 type="email"
                 value={userEmail}
                 disabled
+                className={profileFieldControl}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="profile-name">Full name</Label>
-              <Input
+            <div className="p-5">
+              <label htmlFor="profile-name" className={profileFieldLabel}>
+                Full name
+              </label>
+              <input
                 id="profile-name"
                 type="text"
                 autoComplete="name"
                 value={name}
                 onChange={(event) => setName(event.currentTarget.value)}
                 required
+                className={profileFieldControl}
               />
             </div>
-          </CardContent>
-          <CardFooter className="justify-end">
-            <Button type="submit" disabled={savingProfile}>
+          </ProfilePanel>
+          <div className="mt-4 flex justify-end">
+            <Button
+              type="submit"
+              variant="gold"
+              size="sm"
+              className="rounded-full"
+              disabled={savingProfile}
+            >
               <Save className="size-4" />
-              {savingProfile ? "Saving..." : "Save profile"}
+              {savingProfile ? "Saving…" : "Save"}
             </Button>
-          </CardFooter>
-        </form>
-      </Card>
-
-      <Card>
-        <CardHeader className="border-b">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-              <Lock className="size-4" />
-            </span>
-            <div>
-              <CardTitle>Password</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Change your password and revoke other sessions.
-              </p>
-            </div>
           </div>
-        </CardHeader>
+        </form>
+      </ProfileSection>
+
+      <ProfileSection
+        title="Password"
+        description="Change your password and sign out other devices."
+      >
         <form onSubmit={handlePasswordSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="current-password">Current password</Label>
-              <Input
+          <ProfilePanel>
+            <div className="border-b border-hairline p-5">
+              <label htmlFor="current-password" className={profileFieldLabel}>
+                Current password
+              </label>
+              <input
                 id="current-password"
                 type="password"
                 autoComplete="current-password"
@@ -166,46 +155,59 @@ export function ProfileForm({ userName, userEmail }: ProfileFormProps) {
                   setCurrentPassword(event.currentTarget.value)
                 }
                 required
+                className={profileFieldControl}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="new-password">New password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.currentTarget.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="confirm-new-password">Confirm password</Label>
-                <Input
-                  id="confirm-new-password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  value={confirmPassword}
-                  onChange={(event) =>
-                    setConfirmPassword(event.currentTarget.value)
-                  }
-                  required
-                />
+            <div className="border-b border-hairline p-5">
+              <label htmlFor="new-password" className={profileFieldLabel}>
+                New password
+              </label>
+              <input
+                id="new-password"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.currentTarget.value)}
+                required
+                className={profileFieldControl}
+              />
+              <div className="mt-3">
+                <PasswordStrengthMeter password={newPassword} />
               </div>
             </div>
-            <PasswordStrengthMeter password={newPassword} />
-          </CardContent>
-          <CardFooter className="justify-end">
-            <Button type="submit" disabled={changingPassword} variant="outline">
+            <div className="p-5">
+              <label htmlFor="confirm-new-password" className={profileFieldLabel}>
+                Confirm password
+              </label>
+              <input
+                id="confirm-new-password"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                value={confirmPassword}
+                onChange={(event) =>
+                  setConfirmPassword(event.currentTarget.value)
+                }
+                required
+                className={profileFieldControl}
+              />
+            </div>
+          </ProfilePanel>
+          <div className="mt-4 flex justify-end">
+            <Button
+              type="submit"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={changingPassword}
+            >
               <Lock className="size-4" />
-              {changingPassword ? "Changing..." : "Change password"}
+              {changingPassword ? "Changing…" : "Change password"}
             </Button>
-          </CardFooter>
+          </div>
         </form>
-      </Card>
+      </ProfileSection>
     </div>
   );
 }

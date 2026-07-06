@@ -39,14 +39,7 @@ export const statement = {
 export const ac = createAccessControl(statement);
 
 export const studentRole = ac.newRole({
-  announcement: ["read"],
-  course: ["read"],
-  event: ["read"],
-  resource: ["read"],
-  lecturer: ["read"],
   concern: ["create"],
-  gallery: ["read"],
-  spotlight: ["read"],
 });
 
 export const contentAdminRole = ac.newRole({
