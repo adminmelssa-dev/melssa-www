@@ -116,7 +116,7 @@ function isGroupActive(group: NavGroup, pathname: string): boolean {
 }
 
 const triggerBase =
-  "h-9 rounded-md bg-transparent px-3 text-[13.5px] font-medium transition-colors hover:bg-paper-3 hover:text-foreground focus:bg-paper-3 data-[state=open]:bg-paper-3 data-[state=open]:text-foreground";
+  "h-9 rounded-md bg-transparent px-3 text-[13.5px] font-medium transition-colors hover:bg-paper-3 hover:text-foreground focus:bg-paper-3 data-[state=open]:bg-paper-3 data-[state=open]:text-foreground data-[active=true]:bg-transparent";
 
 /* ---------------- Desktop ---------------- */
 

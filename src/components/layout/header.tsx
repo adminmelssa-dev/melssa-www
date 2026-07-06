@@ -43,11 +43,11 @@ export function Header() {
           aria-hidden
           className="absolute inset-x-0 top-0 h-0.5 bg-gold"
         />
-        <div className="mx-auto flex h-full max-w-6xl items-center gap-8 px-7">
+        <div className="mx-auto grid h-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-7">
           <MelssaWordmark />
           <DesktopNav />
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center justify-self-end gap-3">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
