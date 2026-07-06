@@ -208,6 +208,10 @@ export const adminBulletinsResponseSchema = z.object({
   subscriberCount: z.number(),
 });
 
+export const adminBulletinDeliveriesResponseSchema = z.object({
+  deliveries: z.array(bulletinDeliveryRowSchema),
+});
+
 export const bulletinUnsubscribeInputSchema = z.object({
   token: z.string().trim().min(20).max(512),
 });
@@ -247,6 +251,9 @@ export type BulletinDeliveryRow = z.infer<typeof bulletinDeliveryRowSchema>;
 export type BulletinIssueRow = z.infer<typeof bulletinIssueRowSchema>;
 export type AdminBulletinsResponse = z.infer<
   typeof adminBulletinsResponseSchema
+>;
+export type AdminBulletinDeliveriesResponse = z.infer<
+  typeof adminBulletinDeliveriesResponseSchema
 >;
 export type BulletinUnsubscribeInput = z.infer<
   typeof bulletinUnsubscribeInputSchema

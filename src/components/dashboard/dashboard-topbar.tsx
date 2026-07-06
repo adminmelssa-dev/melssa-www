@@ -1,9 +1,12 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bell, Menu, PanelLeft, Search } from "lucide-react";
+import { Menu, PanelLeft, Search } from "lucide-react";
+import { DashboardNotificationBell } from "@/components/dashboard/dashboard-notification-bell";
+import type { DashboardNotificationsResponse } from "@/modules/notifications/contracts";
 
 interface DashboardTopbarProps {
+  initialNotifications: DashboardNotificationsResponse;
   onToggleCollapse: () => void;
   onOpenMobile: () => void;
   onOpenSearch: () => void;
@@ -19,6 +22,7 @@ const iconButton =
   "grid size-9 place-items-center rounded-md text-foreground/55 transition-colors hover:bg-paper-3 hover:text-foreground";
 
 export function DashboardTopbar({
+  initialNotifications,
   onToggleCollapse,
   onOpenMobile,
   onOpenSearch,
@@ -68,9 +72,7 @@ export function DashboardTopbar({
             ⌘K
           </kbd>
         </button>
-        <button type="button" aria-label="Notifications" className={iconButton}>
-          <Bell className="size-[18px]" />
-        </button>
+        <DashboardNotificationBell initialNotifications={initialNotifications} />
       </div>
     </header>
   );

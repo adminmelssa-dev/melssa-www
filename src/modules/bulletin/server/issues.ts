@@ -11,12 +11,14 @@ import {
   type SendBulletinIssueInput,
   type UpdateBulletinIssueInput,
 } from "@/modules/bulletin/contracts";
+import { CONTENT_ADMIN_ROLES } from "@/modules/auth/roles";
 import {
   getActiveBulletinIssueById,
   getActiveBulletinSubscriptions,
   serializeBulletinIssue,
 } from "@/modules/bulletin/queries";
 import { createBulletinUnsubscribeToken } from "@/modules/bulletin/server/subscriptions";
+import { createDashboardNotificationsForRoles } from "@/modules/notifications/server/notifications";
 import { ExpectedError } from "@/lib/action-result";
 import { env } from "@/lib/env";
 import { writeAuditLog } from "@/server/audit/log";
@@ -281,6 +283,13 @@ export async function sendBulletinIssue({
     },
   });
 
+  await notifyContentAdminsOfBulletinSend({
+    failureCount,
+    issueTitle: issue.title,
+    recipientCount: subscriptions.length,
+    successCount,
+  });
+
   revalidateBulletins();
 
   return {
@@ -319,6 +328,39 @@ function getDeliveryErrorMessage(error: unknown): string {
   }
 
   return "Delivery failed.";
+}
+
+async function notifyContentAdminsOfBulletinSend({
+  failureCount,
+  issueTitle,
+  recipientCount,
+  successCount,
+}: {
+  failureCount: number;
+  issueTitle: string;
+  recipientCount: number;
+  successCount: number;
+}): Promise<void> {
+  try {
+    await createDashboardNotificationsForRoles({
+      body:
+        failureCount > 0
+          ? `${issueTitle} reached ${successCount} of ${recipientCount} subscribers.`
+          : `${issueTitle} was sent to ${successCount} subscribers.`,
+      href: "/dashboard/bulletins",
+      roles: CONTENT_ADMIN_ROLES,
+      title:
+        failureCount > 0
+          ? "Bulletin sent with delivery issues"
+          : "Bulletin sent",
+      type:
+        failureCount > 0
+          ? "bulletin.delivery.partial"
+          : "bulletin.delivery.sent",
+    });
+  } catch (error) {
+    console.error("Bulletin dashboard notification failed.", { error });
+  }
 }
 
 function sanitizeBulletinIssueInput<TInput extends CreateBulletinIssueInput>(

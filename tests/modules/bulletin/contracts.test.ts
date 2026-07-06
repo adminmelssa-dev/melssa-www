@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   BULLETIN_SECTION_CATEGORY_LABELS,
+  adminBulletinDeliveriesResponseSchema,
   createBulletinIssueInputSchema,
   subscribeToBulletinInputSchema,
 } from "../../../src/modules/bulletin/contracts";
@@ -68,5 +69,35 @@ describe("bulletin contracts", () => {
   test("keeps section labels available for email rendering", () => {
     expect(BULLETIN_SECTION_CATEGORY_LABELS.academic).toBe("Academic");
     expect(BULLETIN_SECTION_CATEGORY_LABELS.resources).toBe("Resources");
+  });
+
+  test("accepts admin bulletin delivery ledgers", () => {
+    const parsed = adminBulletinDeliveriesResponseSchema.parse({
+      deliveries: [
+        {
+          id: 1,
+          email: "subscriber@atu.edu.gh",
+          status: "sent",
+          provider: "resend",
+          messageId: "msg_123",
+          errorMessage: null,
+          sentAt: "2026-07-06T20:00:00.000Z",
+          createdAt: "2026-07-06T20:00:00.000Z",
+        },
+        {
+          id: 2,
+          email: "student@atu.edu.gh",
+          status: "failed",
+          provider: null,
+          messageId: null,
+          errorMessage: "Mailbox unavailable.",
+          sentAt: null,
+          createdAt: "2026-07-06T20:01:00.000Z",
+        },
+      ],
+    });
+
+    expect(parsed.deliveries).toHaveLength(2);
+    expect(parsed.deliveries[1]?.status).toBe("failed");
   });
 });

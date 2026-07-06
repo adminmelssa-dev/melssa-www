@@ -4,7 +4,10 @@ import * as React from "react";
 import {
   Archive,
   BookOpenText,
+  CircleAlert,
+  CircleCheck,
   Edit3,
+  ListChecks,
   MailCheck,
   MoreHorizontal,
   Plus,
@@ -52,12 +55,16 @@ import {
   BULLETIN_SECTION_CATEGORY_OPTIONS,
   BULLETIN_STATUS_LABELS,
   BULLETIN_STATUS_OPTIONS,
+  adminBulletinDeliveriesResponseSchema,
   adminBulletinsResponseSchema,
   bulletinSectionCategorySchema,
   createBulletinIssueInputSchema,
   getBulletinRichTextPlainText,
   type AdminBulletinMutation,
+  type AdminBulletinDeliveriesResponse,
   type AdminBulletinsResponse,
+  type BulletinDeliveryRow,
+  type BulletinDeliveryStatus,
   type BulletinIssueRow,
   type BulletinIssueStatus,
   type BulletinSection,
@@ -71,16 +78,34 @@ import {
 
 const adminBulletinsQueryKey = ["admin-bulletins"];
 
+const adminBulletinDeliveriesQueryKey = (bulletinId: number) => [
+  "admin-bulletin-deliveries",
+  bulletinId,
+];
+
 const deliveryFilterOptions = [
   { label: "No failures", value: "clean" },
   { label: "Has failures", value: "issues" },
   { label: "Not sent", value: "not_sent" },
 ];
 
+const deliveryStatusFilterOptions = [
+  { label: "Sent", value: "sent" },
+  { label: "Failed", value: "failed" },
+];
+
 const dateFormatter = new Intl.DateTimeFormat("en", {
   month: "short",
   day: "numeric",
   year: "numeric",
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
 });
 
 interface BulletinFormValues {
@@ -116,6 +141,8 @@ export function BulletinsTable({
   const [sendingBulletin, setSendingBulletin] =
     React.useState<BulletinIssueRow | null>(null);
   const [archivingBulletin, setArchivingBulletin] =
+    React.useState<BulletinIssueRow | null>(null);
+  const [viewingDeliveries, setViewingDeliveries] =
     React.useState<BulletinIssueRow | null>(null);
   const queryClient = useQueryClient();
 
@@ -158,6 +185,7 @@ export function BulletinsTable({
         onArchive: setArchivingBulletin,
         onEdit: setEditingBulletin,
         onSend: setSendingBulletin,
+        onViewDeliveries: setViewingDeliveries,
         permissions,
       }),
     [permissions],
@@ -259,6 +287,15 @@ export function BulletinsTable({
           if (!open) setArchivingBulletin(null);
         }}
       />
+
+      {viewingDeliveries ? (
+        <BulletinDeliveriesDialog
+          bulletin={viewingDeliveries}
+          onOpenChange={(open) => {
+            if (!open) setViewingDeliveries(null);
+          }}
+        />
+      ) : null}
     </section>
   );
 }
@@ -640,11 +677,13 @@ function getColumns({
   onArchive,
   onEdit,
   onSend,
+  onViewDeliveries,
   permissions,
 }: {
   onArchive: (bulletin: BulletinIssueRow) => void;
   onEdit: (bulletin: BulletinIssueRow) => void;
   onSend: (bulletin: BulletinIssueRow) => void;
+  onViewDeliveries: (bulletin: BulletinIssueRow) => void;
   permissions: BulletinTablePermissions;
 }): ColumnDef<BulletinIssueRow>[] {
   return [
@@ -757,6 +796,7 @@ function getColumns({
           onArchive={onArchive}
           onEdit={onEdit}
           onSend={onSend}
+          onViewDeliveries={onViewDeliveries}
           permissions={permissions}
         />
       ),
@@ -770,19 +810,22 @@ function BulletinRowActions({
   onArchive,
   onEdit,
   onSend,
+  onViewDeliveries,
   permissions,
 }: {
   bulletin: BulletinIssueRow;
   onArchive: (bulletin: BulletinIssueRow) => void;
   onEdit: (bulletin: BulletinIssueRow) => void;
   onSend: (bulletin: BulletinIssueRow) => void;
+  onViewDeliveries: (bulletin: BulletinIssueRow) => void;
   permissions: BulletinTablePermissions;
 }) {
   const canEdit = permissions.canUpdate && bulletin.status === "draft";
   const canSend = permissions.canSend && bulletin.status === "draft";
   const canArchive =
     permissions.canArchive && bulletin.status !== "archived";
-  const hasActions = canEdit || canSend || canArchive;
+  const canViewDeliveries = bulletin.recipientCount > 0;
+  const hasActions = canEdit || canSend || canArchive || canViewDeliveries;
 
   if (!hasActions) return null;
 
@@ -796,6 +839,15 @@ function BulletinRowActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
+          {canViewDeliveries ? (
+            <DropdownMenuItem onSelect={() => onViewDeliveries(bulletin)}>
+              <ListChecks className="size-4" />
+              View deliveries
+            </DropdownMenuItem>
+          ) : null}
+          {canViewDeliveries && (canEdit || canSend || canArchive) ? (
+            <DropdownMenuSeparator />
+          ) : null}
           {canEdit ? (
             <DropdownMenuItem onSelect={() => onEdit(bulletin)}>
               <Edit3 className="size-4" />
@@ -823,6 +875,257 @@ function BulletinRowActions({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+  );
+}
+
+function BulletinDeliveriesDialog({
+  bulletin,
+  onOpenChange,
+}: {
+  bulletin: BulletinIssueRow;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const columns = React.useMemo(() => getDeliveryColumns(), []);
+  const deliveriesQuery = useQuery({
+    queryKey: adminBulletinDeliveriesQueryKey(bulletin.id),
+    queryFn: () => fetchAdminBulletinDeliveries(bulletin.id),
+  });
+  const deliveries = deliveriesQuery.data?.deliveries ?? [];
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-6xl">
+        <DialogHeader>
+          <DialogTitle>Delivery ledger</DialogTitle>
+          <DialogDescription>
+            {bulletin.title} was sent to {bulletin.recipientCount} subscriber
+            {bulletin.recipientCount === 1 ? "" : "s"}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <DeliveryMetric
+            label="Delivered"
+            tone="success"
+            value={bulletin.deliverySuccessCount}
+          />
+          <DeliveryMetric
+            label="Failed"
+            tone="danger"
+            value={bulletin.deliveryFailureCount}
+          />
+          <DeliveryMetric
+            label="Recorded"
+            tone="neutral"
+            value={bulletin.recipientCount}
+          />
+        </div>
+
+        {deliveriesQuery.isPending ? (
+          <DeliveryLedgerSkeleton />
+        ) : deliveriesQuery.isError ? (
+          <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-lg border bg-card p-6 text-center">
+            <CircleAlert className="size-7 text-destructive" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Deliveries could not load</p>
+              <p className="max-w-sm text-xs text-muted-foreground">
+                {deliveriesQuery.error.message}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void deliveriesQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={deliveries}
+            emptyState={
+              <div className="flex h-44 flex-col items-center justify-center gap-1 text-center">
+                <span className="flex size-10 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                  <ListChecks className="size-5" />
+                </span>
+                <p className="text-sm font-medium">No deliveries recorded</p>
+                <p className="text-xs text-muted-foreground">
+                  Delivery attempts will appear here after a send.
+                </p>
+              </div>
+            }
+            filters={[
+              {
+                columnId: "status",
+                options: deliveryStatusFilterOptions,
+                title: "Status",
+              },
+            ]}
+            getRowId={(delivery) => String(delivery.id)}
+            initialColumnVisibility={{
+              errorMessage: bulletin.deliveryFailureCount > 0,
+              messageId: false,
+            }}
+            initialPageSize={8}
+            searchPlaceholder="Search recipients..."
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeliveryMetric({
+  label,
+  tone,
+  value,
+}: {
+  label: string;
+  tone: "danger" | "neutral" | "success";
+  value: number;
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          {label}
+        </p>
+        <span
+          className={
+            tone === "success"
+              ? "size-2 rounded-full bg-emerald-500"
+              : tone === "danger"
+                ? "size-2 rounded-full bg-destructive"
+                : "size-2 rounded-full bg-muted-foreground/45"
+          }
+        />
+      </div>
+      <p className="mt-2 font-heading text-3xl">{value}</p>
+    </div>
+  );
+}
+
+function DeliveryLedgerSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="h-10 flex-1 rounded-md bg-muted" />
+        <div className="h-10 w-28 rounded-md bg-muted" />
+        <div className="h-10 w-24 rounded-md bg-muted" />
+      </div>
+      <div className="overflow-hidden rounded-xl border bg-card">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div
+            className="grid grid-cols-[1.4fr_0.7fr_0.8fr_1fr] gap-4 border-b border-hairline p-4 last:border-b-0"
+            key={`delivery-skeleton-${index}`}
+          >
+            <div className="h-4 rounded bg-muted" />
+            <div className="h-4 rounded bg-muted" />
+            <div className="h-4 rounded bg-muted" />
+            <div className="h-4 rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getDeliveryColumns(): ColumnDef<BulletinDeliveryRow>[] {
+  return [
+    {
+      accessorKey: "email",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Recipient" />
+      ),
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.email}</span>
+      ),
+      meta: { label: "Recipient", className: "min-w-56" },
+    },
+    {
+      accessorKey: "status",
+      filterFn: stringArrayFilter,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
+      cell: ({ row }) => (
+        <DeliveryStatusBadge status={row.original.status} />
+      ),
+      meta: { label: "Status" },
+    },
+    {
+      accessorKey: "provider",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Provider" />
+      ),
+      cell: ({ row }) => row.original.provider ?? "Not recorded",
+      meta: { label: "Provider" },
+    },
+    {
+      accessorKey: "messageId",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Message ID" />
+      ),
+      cell: ({ row }) => (
+        <span className="block max-w-56 truncate font-mono text-xs">
+          {row.original.messageId ?? "Not recorded"}
+        </span>
+      ),
+      meta: { label: "Message ID", className: "min-w-52" },
+    },
+    {
+      accessorKey: "errorMessage",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Error" />
+      ),
+      cell: ({ row }) => (
+        <span className="block max-w-72 truncate text-muted-foreground">
+          {row.original.errorMessage ?? "None"}
+        </span>
+      ),
+      meta: { label: "Error", className: "min-w-64" },
+    },
+    {
+      accessorKey: "sentAt",
+      enableGlobalFilter: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Sent" />
+      ),
+      cell: ({ row }) => formatDateTime(row.original.sentAt),
+      sortingFn: nullableDateSort,
+      meta: { label: "Sent" },
+    },
+    {
+      accessorKey: "createdAt",
+      enableGlobalFilter: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Recorded" />
+      ),
+      cell: ({ row }) => formatDateTime(row.original.createdAt),
+      sortingFn: nullableDateSort,
+      meta: { label: "Recorded" },
+    },
+  ];
+}
+
+function DeliveryStatusBadge({ status }: { status: BulletinDeliveryStatus }) {
+  if (status === "sent") {
+    return (
+      <Badge>
+        <CircleCheck className="size-3" />
+        Sent
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="destructive">
+      <CircleAlert className="size-3" />
+      Failed
+    </Badge>
   );
 }
 
@@ -1020,6 +1323,26 @@ async function archiveAdminBulletin(
   return parseActionResponse(response, "Bulletin archive failed.");
 }
 
+async function fetchAdminBulletinDeliveries(
+  bulletinId: number,
+): Promise<AdminBulletinDeliveriesResponse> {
+  const response = await fetch(`/api/admin/bulletins/${bulletinId}/deliveries`, {
+    headers: { Accept: "application/json" },
+  });
+  const body: unknown = await response.json();
+
+  if (!response.ok) {
+    const parsedError = actionResultSchema.safeParse(body);
+    throw new Error(
+      parsedError.success
+        ? parsedError.data.message
+        : "Failed to load bulletin deliveries.",
+    );
+  }
+
+  return adminBulletinDeliveriesResponseSchema.parse(body);
+}
+
 async function parseActionResponse(
   response: Response,
   fallback: string,
@@ -1110,4 +1433,8 @@ function dateValue(value: unknown): number {
 
 function formatDate(value: string | null): string {
   return value ? dateFormatter.format(new Date(value)) : "Never";
+}
+
+function formatDateTime(value: string | null): string {
+  return value ? dateTimeFormatter.format(new Date(value)) : "Never";
 }

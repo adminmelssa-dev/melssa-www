@@ -11,10 +11,12 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
 import { DashboardCommand } from "@/components/dashboard/dashboard-command";
 import type { UserRole } from "@/modules/auth/roles";
+import type { DashboardNotificationsResponse } from "@/modules/notifications/contracts";
 import { useSidebarCollapsed } from "@/lib/use-sidebar-collapsed";
 import { cn } from "@/lib/utils";
 
 interface DashboardShellProps {
+  initialNotifications: DashboardNotificationsResponse;
   role: UserRole | null;
   userName: string;
   userEmail: string;
@@ -23,6 +25,7 @@ interface DashboardShellProps {
 
 /** Dashboard chrome: collapsible desktop sidebar, mobile sheet, topbar, ⌘K palette. */
 export function DashboardShell({
+  initialNotifications,
   role,
   userName,
   userEmail,
@@ -75,6 +78,7 @@ export function DashboardShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardTopbar
+          initialNotifications={initialNotifications}
           onToggleCollapse={toggleCollapsed}
           onOpenMobile={() => setMobileOpen(true)}
           onOpenSearch={() => setSearchOpen(true)}

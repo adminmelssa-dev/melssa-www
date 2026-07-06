@@ -30,6 +30,7 @@ export const relations = defineRelations(schema, (r) => ({
     sentBulletinIssues: r.many.bulletinIssues({
       alias: "sent_bulletin_issues",
     }),
+    dashboardNotifications: r.many.dashboardNotifications(),
   },
   session: {
     user: r.one.user({
@@ -212,6 +213,13 @@ export const relations = defineRelations(schema, (r) => ({
     subscription: r.one.bulletinSubscriptions({
       from: r.bulletinDeliveries.subscriptionId,
       to: r.bulletinSubscriptions.id,
+    }),
+  },
+  dashboardNotifications: {
+    user: r.one.user({
+      from: r.dashboardNotifications.userId,
+      to: r.user.id,
+      optional: false,
     }),
   },
 }));
