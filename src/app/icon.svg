@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MELSSA">
+  <rect width="512" height="512" rx="112" fill="#fbf8f1"/>
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#b9862b" stroke-width="24"/>
+  <circle cx="256" cy="256" r="156" fill="none" stroke="#e1d7c5" stroke-width="10"/>
+  <g fill="none" stroke="#0e2a54" stroke-linecap="round" stroke-width="26">
+    <ellipse cx="256" cy="256" rx="154" ry="58" transform="rotate(28 256 256)"/>
+    <ellipse cx="256" cy="256" rx="154" ry="58" transform="rotate(-28 256 256)"/>
+    <ellipse cx="256" cy="256" rx="58" ry="154"/>
+  </g>
+  <circle cx="256" cy="256" r="28" fill="#b9862b"/>
+</svg>

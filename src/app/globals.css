@@ -1,0 +1,284 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Editorial brand tokens */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-paper-4: var(--paper-4);
+  --color-ink: var(--ink);
+  --color-navy: var(--navy);
+  --color-navy-600: var(--navy-600);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-gold-ink: var(--gold-ink);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-soft: var(--gold-soft);
+  --color-hairline: var(--hairline);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  /* Fixed constants for always-dark editorial sections (hero / cta / footer) —
+     these must NOT flip with the theme. cream = paper, navy-deep = hero/footer,
+     ink-deep = near-black CTA band. */
+  --color-cream: oklch(0.959 0.014 84.6);
+  --color-navy-deep: oklch(0.29 0.084 258.6);
+  --color-ink-deep: oklch(0.257 0.043 262.6);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-serif: var(--font-heading);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+
+  --ease-editorial: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Infinite horizontal marquee (photo filmstrip). */
+@keyframes marquee-x {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@utility animate-marquee {
+  animation: marquee-x 64s linear infinite;
+}
+
+/* Gentle gold glow-pulse for the campaign badge. */
+@keyframes campaign-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 8px 24px -8px rgba(227, 168, 28, 0.55),
+      0 0 0 0 rgba(227, 168, 28, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 8px 28px -8px rgba(227, 168, 28, 0.65),
+      0 0 0 10px rgba(227, 168, 28, 0);
+  }
+}
+
+@utility animate-campaign-glow {
+  animation: campaign-glow 2.6s ease-in-out infinite;
+}
+
+/* Staggered entrance for modal copy. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+  MELSSA editorial palette — warm ivory paper · navy ink · antique gold accent.
+  Light-first. Structure comes from hairlines + whitespace, one restrained accent.
+*/
+:root {
+  --background: oklch(0.959 0.014 84.6); /* paper */
+  --foreground: oklch(0.257 0.043 262.6); /* ink */
+  --card: oklch(0.98 0.01 87.5); /* paper-2 */
+  --card-foreground: oklch(0.257 0.043 262.6);
+  --popover: oklch(0.98 0.01 87.5);
+  --popover-foreground: oklch(0.257 0.043 262.6);
+
+  --primary: oklch(0.257 0.043 262.6); /* ink — default action */
+  --primary-foreground: oklch(0.959 0.014 84.6);
+  --secondary: oklch(0.93 0.022 83.3); /* paper-3 */
+  --secondary-foreground: oklch(0.257 0.043 262.6);
+  --muted: oklch(0.93 0.022 83.3);
+  --muted-foreground: oklch(0.505 0.036 269.4);
+  --accent: oklch(0.913 0.046 87.8); /* gold-soft */
+  --accent-foreground: oklch(0.532 0.102 78.5); /* gold-ink */
+  --destructive: oklch(0.489 0.134 28.2); /* brick */
+
+  --border: color-mix(in oklch, var(--foreground) 13%, transparent);
+  --input: color-mix(in oklch, var(--foreground) 16%, transparent);
+  --ring: oklch(0.471 0.109 254.9); /* navy-500 */
+  --hairline: color-mix(in oklch, var(--foreground) 13%, transparent);
+
+  /* Named editorial scale */
+  --paper: oklch(0.959 0.014 84.6);
+  --paper-2: oklch(0.98 0.01 87.5);
+  --paper-3: oklch(0.93 0.022 83.3);
+  --paper-4: oklch(0.906 0.027 85.7);
+  --ink: oklch(0.257 0.043 262.6);
+  --navy: oklch(0.29 0.084 258.6);
+  --navy-600: oklch(0.41 0.111 255.9);
+  --gold: oklch(0.655 0.121 77.6);
+  --gold-foreground: oklch(0.225 0.037 82.9);
+  --gold-ink: oklch(0.532 0.102 78.5);
+  --gold-bright: oklch(0.76 0.128 81.5);
+  --gold-soft: oklch(0.913 0.046 87.8);
+
+  --brand: oklch(0.29 0.084 258.6); /* navy */
+  --brand-foreground: oklch(0.959 0.014 84.6);
+
+  --success: oklch(0.498 0.05 150.6); /* sage */
+  --warning: oklch(0.532 0.102 78.5); /* gold-ink */
+  --info: oklch(0.482 0.091 247.6); /* sky */
+
+  --radius: 0.5rem;
+
+  --sidebar: oklch(0.98 0.01 87.5);
+  --sidebar-foreground: oklch(0.257 0.043 262.6);
+  --sidebar-primary: oklch(0.29 0.084 258.6);
+  --sidebar-primary-foreground: oklch(0.959 0.014 84.6);
+  --sidebar-accent: oklch(0.93 0.022 83.3);
+  --sidebar-accent-foreground: oklch(0.257 0.043 262.6);
+  --sidebar-border: color-mix(in oklch, var(--foreground) 12%, transparent);
+  --sidebar-ring: oklch(0.471 0.109 254.9);
+}
+
+.dark {
+  --background: oklch(0.195 0.033 260.2);
+  --foreground: oklch(0.926 0.02 87.5);
+  --card: oklch(0.238 0.045 258.3);
+  --card-foreground: oklch(0.926 0.02 87.5);
+  --popover: oklch(0.238 0.045 258.3);
+  --popover-foreground: oklch(0.926 0.02 87.5);
+
+  --primary: oklch(0.926 0.02 87.5); /* ivory */
+  --primary-foreground: oklch(0.195 0.033 260.2);
+  --secondary: oklch(0.271 0.05 257.1);
+  --secondary-foreground: oklch(0.926 0.02 87.5);
+  --muted: oklch(0.271 0.05 257.1);
+  --muted-foreground: oklch(0.702 0.045 260.4);
+  --accent: oklch(0.261 0.034 93.2); /* dim gold */
+  --accent-foreground: oklch(0.76 0.128 81.5);
+  --destructive: oklch(0.58 0.15 28);
+
+  --border: color-mix(in oklch, var(--foreground) 14%, transparent);
+  --input: color-mix(in oklch, var(--foreground) 18%, transparent);
+  --ring: oklch(0.76 0.128 81.5);
+  --hairline: color-mix(in oklch, var(--foreground) 14%, transparent);
+
+  --paper: oklch(0.195 0.033 260.2);
+  --paper-2: oklch(0.238 0.045 258.3);
+  --paper-3: oklch(0.271 0.05 257.1);
+  --paper-4: oklch(0.3 0.05 257);
+  --ink: oklch(0.926 0.02 87.5);
+  --navy: oklch(0.238 0.045 258.3);
+  --navy-600: oklch(0.41 0.111 255.9);
+  --gold: oklch(0.76 0.128 81.5);
+  --gold-foreground: oklch(0.195 0.033 260.2);
+  --gold-ink: oklch(0.76 0.128 81.5);
+  --gold-bright: oklch(0.8 0.13 82);
+  --gold-soft: oklch(0.261 0.034 93.2);
+
+  --brand: oklch(0.238 0.045 258.3);
+  --brand-foreground: oklch(0.926 0.02 87.5);
+
+  --success: oklch(0.62 0.08 150);
+  --warning: oklch(0.76 0.128 81.5);
+  --info: oklch(0.62 0.1 247);
+
+  --sidebar: oklch(0.238 0.045 258.3);
+  --sidebar-foreground: oklch(0.926 0.02 87.5);
+  --sidebar-primary: oklch(0.76 0.128 81.5);
+  --sidebar-primary-foreground: oklch(0.195 0.033 260.2);
+  --sidebar-accent: oklch(0.271 0.05 257.1);
+  --sidebar-accent-foreground: oklch(0.926 0.02 87.5);
+  --sidebar-border: color-mix(in oklch, var(--foreground) 14%, transparent);
+  --sidebar-ring: oklch(0.76 0.128 81.5);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply h-full scroll-smooth font-sans;
+  }
+
+  body {
+    @apply min-h-full bg-background text-foreground antialiased;
+    /* Baskervville ships weight 400 only — stop weight utilities from faking a
+       heavier serif. Inter has real weights, so this is a no-op there. */
+    font-synthesis-weight: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    line-height: 1.06;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  label[for],
+  [type="checkbox"]:not(:disabled),
+  [type="radio"]:not(:disabled),
+  [type="file"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
