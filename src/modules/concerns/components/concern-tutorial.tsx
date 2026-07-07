@@ -245,7 +245,7 @@ export function ConcernTutorial({
             role="dialog"
             aria-modal="true"
             aria-label="How concerns work"
-            className="relative z-10 mx-4 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-md border border-hairline bg-background text-foreground shadow-2xl"
+            className="relative z-10 mx-4 flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-md border border-hairline bg-background text-foreground shadow-2xl"
           >
             <button
               type="button"

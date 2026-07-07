@@ -93,9 +93,12 @@ export function Footer() {
 
       <div className="border-t border-cream/10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-7 py-6 text-center sm:flex-row sm:text-left">
-          <p className="text-xs text-cream/50">
-            © 2026 MELSSA · Accra Technical University
-          </p>
+          <div className="text-xs text-cream/50">
+            <p>© 2026 MELSSA · Accra Technical University</p>
+            <p className="mt-1 text-cream/40">
+              All rights reserved · Kirstin Austin Ankrah
+            </p>
+          </div>
           <p className="font-heading text-[15px] italic text-gold-bright">
             Integrity, Creativity &amp; Excellence
           </p>

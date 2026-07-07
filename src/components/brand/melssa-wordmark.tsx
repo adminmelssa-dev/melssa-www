@@ -8,6 +8,8 @@ interface MelssaWordmarkProps {
   /** Render for placement on a dark (navy) surface. */
   onDark?: boolean;
   className?: string;
+  /** Extra classes for the subtitle line — e.g. to hide it on small screens. */
+  subtitleClassName?: string;
 }
 
 /** MELSSA lockup: a gold-ringed crest mark beside the serif wordmark. */
@@ -16,6 +18,7 @@ export function MelssaWordmark({
   subtitle = "Accra Technical University",
   onDark = false,
   className,
+  subtitleClassName,
 }: MelssaWordmarkProps) {
   return (
     <Link
@@ -41,7 +44,12 @@ export function MelssaWordmark({
         >
           MELSSA
         </span>
-        <span className="mt-1 block text-[0.6rem] font-medium uppercase tracking-[0.22em] text-gold-ink">
+        <span
+          className={cn(
+            "mt-1 block text-[0.6rem] font-medium uppercase tracking-[0.22em] text-gold-ink",
+            subtitleClassName,
+          )}
+        >
           {subtitle}
         </span>
       </span>

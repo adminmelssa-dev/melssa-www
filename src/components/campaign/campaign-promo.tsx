@@ -66,13 +66,13 @@ export function CampaignPromo() {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="gap-0 overflow-hidden border-hairline p-0 duration-500 sm:max-w-4xl">
+        <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden border-hairline p-0 duration-500 sm:max-w-4xl">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-3.5 z-20 rounded-sm border border-gold/25"
           />
 
-          <div className="grid sm:grid-cols-[0.85fr_1fr]">
+          <div className="grid min-h-0 flex-1 overflow-y-auto sm:grid-cols-[0.85fr_1fr]">
             {/* Portrait with name-plate */}
             <div className="relative h-60 overflow-hidden bg-navy-deep sm:h-auto sm:min-h-[560px]">
               <Image

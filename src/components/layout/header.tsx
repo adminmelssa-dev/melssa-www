@@ -44,7 +44,7 @@ export function Header() {
           className="absolute inset-x-0 top-0 h-0.5 bg-gold"
         />
         <div className="mx-auto grid h-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-7">
-          <MelssaWordmark />
+          <MelssaWordmark subtitleClassName="hidden sm:block" />
           <DesktopNav />
 
           <div className="flex items-center justify-self-end gap-3">
@@ -59,7 +59,12 @@ export function Header() {
                 ⌘K
               </kbd>
             </button>
-            <Button asChild variant="gold" size="sm" className="rounded-full px-4">
+            <Button
+              asChild
+              variant="gold"
+              size="sm"
+              className="hidden rounded-full px-4 lg:inline-flex"
+            >
               <Link href="/dashboard">Enter dashboard</Link>
             </Button>
             <MobileNav />

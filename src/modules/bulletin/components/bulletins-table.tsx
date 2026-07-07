@@ -933,7 +933,7 @@ function BulletinDeliveriesDialog({
 
   return (
     <Dialog onOpenChange={onOpenChange} open>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-6xl">
+      <DialogContent className="sm:max-w-6xl">
         <DialogHeader>
           <DialogTitle>Delivery ledger</DialogTitle>
           <DialogDescription>
