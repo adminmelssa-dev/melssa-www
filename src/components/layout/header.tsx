@@ -47,7 +47,7 @@ export function Header() {
           <MelssaWordmark subtitleClassName="hidden sm:block" />
           <DesktopNav />
 
-          <div className="flex items-center justify-self-end gap-3">
+          <div className="col-start-3 flex items-center justify-self-end gap-3">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}

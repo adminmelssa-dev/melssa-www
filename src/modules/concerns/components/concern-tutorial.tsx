@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -235,8 +236,9 @@ export function ConcernTutorial({
         {triggerLabel}
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {open
+        ? createPortal(
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-navy-deep/70 backdrop-blur-sm"
             onClick={close}
@@ -313,8 +315,10 @@ export function ConcernTutorial({
               </Button>
             </div>
           </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
