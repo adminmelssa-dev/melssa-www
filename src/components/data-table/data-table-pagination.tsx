@@ -19,14 +19,16 @@ import {
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
   pageSizeOptions?: number[];
+  totalRows?: number;
 }
 
 export function DataTablePagination<TData>({
   table,
   pageSizeOptions = [10, 20, 30, 50, 100],
+  totalRows,
 }: DataTablePaginationProps<TData>) {
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
-  const totalCount = table.getFilteredRowModel().rows.length;
+  const totalCount = totalRows ?? table.getFilteredRowModel().rows.length;
 
   return (
     <div className="flex flex-col-reverse items-center gap-4 px-1 sm:flex-row sm:justify-between">

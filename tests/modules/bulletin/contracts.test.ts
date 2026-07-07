@@ -95,6 +95,12 @@ describe("bulletin contracts", () => {
           createdAt: "2026-07-06T20:01:00.000Z",
         },
       ],
+      meta: {
+        pageCount: 1,
+        pageIndex: 0,
+        pageSize: 8,
+        totalRows: 2,
+      },
     });
 
     expect(parsed.deliveries).toHaveLength(2);

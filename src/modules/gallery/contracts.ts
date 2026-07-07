@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export const galleryItemTypeSchema = z.union([
   z.literal("event"),
@@ -87,9 +88,12 @@ export const galleryItemRowSchema = z.object({
 
 export const adminGalleryResponseSchema = z.object({
   galleryItems: z.array(galleryItemRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
-export const publicGalleryResponseSchema = adminGalleryResponseSchema;
+export const publicGalleryResponseSchema = z.object({
+  galleryItems: z.array(galleryItemRowSchema),
+});
 
 export const createGalleryItemInputSchema = z.object({
   title: z

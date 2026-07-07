@@ -2,14 +2,29 @@ import "server-only";
 
 import {
   and,
+  asc,
+  count,
   desc,
   eq,
+  ilike,
+  inArray,
+  or,
+  type SQL,
 } from "drizzle-orm";
 import { z } from "zod";
 import {
+  financeDocumentTypeSchema,
   financeDocumentRowSchema,
   type FinanceDocumentRow,
 } from "@/modules/finance/contracts";
+import { contentStatusSchema } from "@/modules/content/contracts";
+import {
+  createDataTablePage,
+  getDataTableFilterValues,
+  getDataTableOffset,
+  type DataTablePage,
+  type DataTableQuery,
+} from "@/lib/data-table-query";
 import { db } from "@/server/db";
 import {
   financeDocuments,
@@ -62,6 +77,13 @@ interface FinanceDocumentQueryRow {
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface FinanceStats {
+  total: number;
+  published: number;
+  draft: number;
+  archived: number;
 }
 
 export async function getFinanceDocuments(): Promise<
@@ -132,6 +154,51 @@ export async function getSerializedFinanceDocuments(): Promise<
 > {
   const documents = await getFinanceDocuments();
   return documents.map((document) => serializeFinanceDocument(document));
+}
+
+export async function getSerializedFinanceDocumentPage(
+  query: DataTableQuery,
+): Promise<DataTablePage<FinanceDocumentRow>> {
+  const where = getFinanceDocumentWhere(query);
+  const [totalRow] = await db
+    .select({ value: count() })
+    .from(financeDocuments)
+    .leftJoin(
+      storageObjects,
+      eq(storageObjects.id, financeDocuments.storageObjectId),
+    )
+    .leftJoin(user, eq(user.id, financeDocuments.createdById))
+    .where(where);
+  const rows = await financeDocumentSelect()
+    .from(financeDocuments)
+    .leftJoin(
+      storageObjects,
+      eq(storageObjects.id, financeDocuments.storageObjectId),
+    )
+    .leftJoin(user, eq(user.id, financeDocuments.createdById))
+    .where(where)
+    .orderBy(...getFinanceDocumentOrderBy(query))
+    .limit(query.pageSize)
+    .offset(getDataTableOffset(query));
+
+  return createDataTablePage({
+    items: rows
+      .map(mapFinanceDocumentRow)
+      .map((document) => serializeFinanceDocument(document)),
+    query,
+    totalRows: totalRow?.value ?? 0,
+  });
+}
+
+export async function getFinanceStats(): Promise<FinanceStats> {
+  const [total, published, draft, archived] = await Promise.all([
+    db.$count(financeDocuments),
+    db.$count(financeDocuments, eq(financeDocuments.status, "published")),
+    db.$count(financeDocuments, eq(financeDocuments.status, "draft")),
+    db.$count(financeDocuments, eq(financeDocuments.status, "archived")),
+  ]);
+
+  return { archived, draft, published, total };
 }
 
 export async function getSerializedPublishedFinanceDocuments(): Promise<
@@ -217,4 +284,77 @@ function mapFinanceDocumentRow(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+function getFinanceDocumentWhere(query: DataTableQuery): SQL | undefined {
+  const conditions: SQL[] = [];
+  const typeFilters = getValidTypeFilters(getDataTableFilterValues(query, "type"));
+  const statusFilters = getValidStatusFilters(
+    getDataTableFilterValues(query, "status"),
+  );
+
+  if (query.search) {
+    const pattern = `%${query.search}%`;
+    const searchCondition = or(
+      ilike(financeDocuments.title, pattern),
+      ilike(financeDocuments.summary, pattern),
+      ilike(financeDocuments.academicYear, pattern),
+      ilike(financeDocuments.programmeName, pattern),
+      ilike(storageObjects.originalFilename, pattern),
+      ilike(user.name, pattern),
+      ilike(user.email, pattern),
+    );
+    if (searchCondition) conditions.push(searchCondition);
+  }
+
+  if (typeFilters.length > 0) {
+    conditions.push(inArray(financeDocuments.type, typeFilters));
+  }
+
+  if (statusFilters.length > 0) {
+    conditions.push(inArray(financeDocuments.status, statusFilters));
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+function getFinanceDocumentOrderBy(query: DataTableQuery) {
+  const isAscending = query.sortDirection === "asc";
+
+  switch (query.sortBy) {
+    case "title":
+      return isAscending
+        ? [asc(financeDocuments.title), desc(financeDocuments.id)]
+        : [desc(financeDocuments.title), desc(financeDocuments.id)];
+    case "type":
+      return isAscending
+        ? [asc(financeDocuments.type), desc(financeDocuments.id)]
+        : [desc(financeDocuments.type), desc(financeDocuments.id)];
+    case "status":
+      return isAscending
+        ? [asc(financeDocuments.status), desc(financeDocuments.id)]
+        : [desc(financeDocuments.status), desc(financeDocuments.id)];
+    case "academicYear":
+      return isAscending
+        ? [asc(financeDocuments.academicYear), desc(financeDocuments.id)]
+        : [desc(financeDocuments.academicYear), desc(financeDocuments.id)];
+    default:
+      return isAscending
+        ? [asc(financeDocuments.updatedAt), asc(financeDocuments.id)]
+        : [desc(financeDocuments.updatedAt), desc(financeDocuments.id)];
+  }
+}
+
+function getValidTypeFilters(values: string[]): FinanceDocumentRow["type"][] {
+  return values.flatMap((value) => {
+    const parsedValue = financeDocumentTypeSchema.safeParse(value);
+    return parsedValue.success ? [parsedValue.data] : [];
+  });
+}
+
+function getValidStatusFilters(values: string[]): FinanceDocumentRow["status"][] {
+  return values.flatMap((value) => {
+    const parsedValue = contentStatusSchema.safeParse(value);
+    return parsedValue.success ? [parsedValue.data] : [];
+  });
 }

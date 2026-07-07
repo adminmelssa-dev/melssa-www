@@ -10,24 +10,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { BulletinsTable } from "@/modules/bulletin/components/bulletins-table";
-import type { BulletinIssueRow } from "@/modules/bulletin/contracts";
-import { getSerializedAdminBulletins } from "@/modules/bulletin/queries";
+import {
+  getBulletinsAdminStats,
+  getSerializedBulletinIssuePage,
+} from "@/modules/bulletin/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface BulletinsAdminStats {
-  subscribers: number;
-  drafts: number;
-  sent: number;
-  deliveryIssues: number;
-}
 
 export async function BulletinsAdminPage() {
   const session = await requirePermission({
     resource: "bulletin",
     action: "read",
   });
-  const data = await getSerializedAdminBulletins();
-  const stats = getBulletinsAdminStats(data.bulletins, data.subscriberCount);
+  const [bulletinPage, stats] = await Promise.all([
+    getSerializedBulletinIssuePage(parseDataTableQuery(new URLSearchParams())),
+    getBulletinsAdminStats(),
+  ]);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "bulletin",
@@ -70,8 +68,9 @@ export async function BulletinsAdminPage() {
       </section>
 
       <BulletinsTable
-        initialBulletins={data.bulletins}
-        initialSubscriberCount={data.subscriberCount}
+        initialBulletins={bulletinPage.items}
+        initialMeta={bulletinPage.meta}
+        initialSubscriberCount={stats.subscribers}
         permissions={permissions}
       />
     </div>
@@ -100,18 +99,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getBulletinsAdminStats(
-  bulletins: BulletinIssueRow[],
-  subscribers: number,
-): BulletinsAdminStats {
-  return {
-    subscribers,
-    drafts: bulletins.filter((bulletin) => bulletin.status === "draft").length,
-    sent: bulletins.filter((bulletin) => bulletin.status === "sent").length,
-    deliveryIssues: bulletins.filter(
-      (bulletin) => bulletin.deliveryFailureCount > 0,
-    ).length,
-  };
 }

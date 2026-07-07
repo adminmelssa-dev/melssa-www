@@ -19,6 +19,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminEventsQueryKey = ["admin-events"];
@@ -91,6 +93,7 @@ interface EventFormValues {
 
 interface EventsTableProps {
   initialEvents: EventRow[];
+  initialMeta: DataTablePageMeta;
   permissions: EventTablePermissions;
 }
 
@@ -101,19 +104,36 @@ interface EventTablePermissions {
   canPublish: boolean;
 }
 
-export function EventsTable({ initialEvents, permissions }: EventsTableProps) {
+export function EventsTable({
+  initialEvents,
+  initialMeta,
+  permissions,
+}: EventsTableProps) {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<EventRow | null>(null);
   const [deletingEvent, setDeletingEvent] = React.useState<EventRow | null>(
     null,
   );
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const eventsQuery = useQuery({
-    queryKey: adminEventsQueryKey,
-    queryFn: fetchAdminEvents,
-    initialData: { events: initialEvents },
+    queryKey: [...adminEventsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminEvents(serverTable.searchParams),
+    initialData: { events: initialEvents, meta: initialMeta },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: eventsQuery.data.meta.pageCount,
+      totalRows: eventsQuery.data.meta.totalRows,
+    });
+  }, [
+    eventsQuery.data.meta.pageCount,
+    eventsQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminEvent,
@@ -177,6 +197,7 @@ export function EventsTable({ initialEvents, permissions }: EventsTableProps) {
         getRowId={(event) => String(event.id)}
         initialColumnVisibility={{ posterStatus: false }}
         searchPlaceholder="Search events..."
+        serverState={serverTable.state}
       />
 
       <EventDialog
@@ -713,8 +734,11 @@ function EventStatusBadge({ status }: { status: EventStatus }) {
   return <Badge variant="outline">{EVENT_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminEvents() {
-  const response = await fetch("/api/admin/events", {
+async function fetchAdminEvents(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/events?${searchParams}`
+    : "/api/admin/events";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

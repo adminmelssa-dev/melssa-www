@@ -11,27 +11,23 @@ import {
 } from "@/components/ui/card";
 import { getSerializedCourses } from "@/modules/academics/queries";
 import { LecturersTable } from "@/modules/lecturers/components/lecturers-table";
-import type { LecturerRow } from "@/modules/lecturers/contracts";
-import { getSerializedLecturers } from "@/modules/lecturers/queries";
+import {
+  getLecturersAdminStats,
+  getSerializedLecturerPage,
+} from "@/modules/lecturers/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface LecturersAdminStats {
-  totalLecturers: number;
-  withEmail: number;
-  withPhoto: number;
-  courseAssignments: number;
-}
 
 export async function LecturersAdminPage() {
   const session = await requirePermission({
     resource: "lecturer",
     action: "read",
   });
-  const [lecturers, courses] = await Promise.all([
-    getSerializedLecturers(),
+  const [lecturerPage, stats, courses] = await Promise.all([
+    getSerializedLecturerPage(parseDataTableQuery(new URLSearchParams())),
+    getLecturersAdminStats(),
     getSerializedCourses(),
   ]);
-  const stats = getLecturersAdminStats(lecturers);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "lecturer",
@@ -67,7 +63,8 @@ export async function LecturersAdminPage() {
 
       <LecturersTable
         initialCourses={courses}
-        initialLecturers={lecturers}
+        initialLecturers={lecturerPage.items}
+        initialMeta={lecturerPage.meta}
         permissions={permissions}
       />
     </div>
@@ -96,18 +93,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getLecturersAdminStats(
-  lecturers: LecturerRow[],
-): LecturersAdminStats {
-  return {
-    totalLecturers: lecturers.length,
-    withEmail: lecturers.filter((lecturer) => lecturer.email !== null).length,
-    withPhoto: lecturers.filter((lecturer) => lecturer.photo !== null).length,
-    courseAssignments: lecturers.reduce(
-      (total, lecturer) => total + lecturer.courses.length,
-      0,
-    ),
-  };
 }

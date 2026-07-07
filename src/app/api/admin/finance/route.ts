@@ -4,24 +4,26 @@ import {
   deleteFinanceDocumentInputSchema,
   updateFinanceDocumentInputSchema,
 } from "@/modules/finance/contracts";
-import { getSerializedFinanceDocuments } from "@/modules/finance/queries";
+import { getSerializedFinanceDocumentPage } from "@/modules/finance/queries";
 import {
   createFinanceDocument,
   deleteFinanceDocument,
   updateFinanceDocument,
 } from "@/modules/finance/server/finance";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({
     resource: "finance",
     action: "read",
   });
   if (!guard.ok) return guard.response;
 
-  const financeDocuments = await getSerializedFinanceDocuments();
-  return NextResponse.json({ financeDocuments });
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedFinanceDocumentPage(query);
+  return NextResponse.json({ financeDocuments: page.items, meta: page.meta });
 }
 
 export async function POST(request: Request) {

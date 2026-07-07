@@ -10,24 +10,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SpotlightsTable } from "@/modules/spotlights/components/spotlights-table";
-import type { SpotlightRow } from "@/modules/spotlights/contracts";
-import { getSerializedSpotlights } from "@/modules/spotlights/queries";
+import {
+  getSerializedSpotlightPage,
+  getSpotlightsAdminStats,
+} from "@/modules/spotlights/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface SpotlightsAdminStats {
-  totalSpotlights: number;
-  publishedSpotlights: number;
-  draftSpotlights: number;
-  archivedSpotlights: number;
-}
 
 export async function SpotlightsAdminPage() {
   const session = await requirePermission({
     resource: "spotlight",
     action: "read",
   });
-  const spotlights = await getSerializedSpotlights();
-  const stats = getSpotlightsAdminStats(spotlights);
+  const [spotlightPage, stats] = await Promise.all([
+    getSerializedSpotlightPage(parseDataTableQuery(new URLSearchParams())),
+    getSpotlightsAdminStats(),
+  ]);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "spotlight",
@@ -74,7 +72,8 @@ export async function SpotlightsAdminPage() {
       </section>
 
       <SpotlightsTable
-        initialSpotlights={spotlights}
+        initialMeta={spotlightPage.meta}
+        initialSpotlights={spotlightPage.items}
         permissions={permissions}
       />
     </div>
@@ -103,20 +102,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getSpotlightsAdminStats(
-  spotlights: SpotlightRow[],
-): SpotlightsAdminStats {
-  return {
-    totalSpotlights: spotlights.length,
-    publishedSpotlights: spotlights.filter(
-      (spotlight) => spotlight.status === "published",
-    ).length,
-    draftSpotlights: spotlights.filter((spotlight) => spotlight.status === "draft")
-      .length,
-    archivedSpotlights: spotlights.filter(
-      (spotlight) => spotlight.status === "archived",
-    ).length,
-  };
 }

@@ -5,6 +5,7 @@ import {
   CONTENT_STATUS_OPTIONS,
   type ContentStatus,
 } from "@/modules/content/contracts";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export { CONTENT_STATUS_LABELS, CONTENT_STATUS_OPTIONS };
 
@@ -141,7 +142,19 @@ export const fundraisingInquiryRowSchema = z.object({
 
 export const adminFundraisingResponseSchema = z.object({
   campaigns: z.array(fundraisingCampaignRowSchema),
+  campaignMeta: dataTablePageMetaSchema,
   inquiries: z.array(fundraisingInquiryRowSchema),
+  inquiryMeta: dataTablePageMetaSchema,
+});
+
+export const adminFundraisingCampaignsResponseSchema = z.object({
+  campaigns: z.array(fundraisingCampaignRowSchema),
+  meta: dataTablePageMetaSchema,
+});
+
+export const adminFundraisingInquiriesResponseSchema = z.object({
+  inquiries: z.array(fundraisingInquiryRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export const createFundraisingCampaignInputSchema = z
@@ -240,6 +253,12 @@ export type UpdateFundraisingInquiryInput = z.infer<
 >;
 export type AdminFundraisingResponse = z.infer<
   typeof adminFundraisingResponseSchema
+>;
+export type AdminFundraisingCampaignsResponse = z.infer<
+  typeof adminFundraisingCampaignsResponseSchema
+>;
+export type AdminFundraisingInquiriesResponse = z.infer<
+  typeof adminFundraisingInquiriesResponseSchema
 >;
 export type AdminFundraisingMutation = z.infer<
   typeof adminFundraisingMutationSchema

@@ -19,6 +19,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminFinanceDocumentsQueryKey = ["admin-finance-documents"];
@@ -99,6 +101,7 @@ interface FinanceDocumentFormValues {
 
 interface FinanceDocumentsTableProps {
   documents: FinanceDocumentRow[];
+  initialMeta: DataTablePageMeta;
   permissions: FinanceDocumentTablePermissions;
 }
 
@@ -111,6 +114,7 @@ interface FinanceDocumentTablePermissions {
 
 export function FinanceDocumentsTable({
   documents,
+  initialMeta,
   permissions,
 }: FinanceDocumentsTableProps) {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -119,12 +123,25 @@ export function FinanceDocumentsTable({
   const [deletingDocument, setDeletingDocument] =
     React.useState<FinanceDocumentRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const financeDocumentsQuery = useQuery({
-    queryKey: adminFinanceDocumentsQueryKey,
-    queryFn: fetchAdminFinanceDocuments,
-    initialData: { financeDocuments: documents },
+    queryKey: [...adminFinanceDocumentsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminFinanceDocuments(serverTable.searchParams),
+    initialData: { financeDocuments: documents, meta: initialMeta },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: financeDocumentsQuery.data.meta.pageCount,
+      totalRows: financeDocumentsQuery.data.meta.totalRows,
+    });
+  }, [
+    financeDocumentsQuery.data.meta.pageCount,
+    financeDocumentsQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminFinanceDocument,
@@ -187,6 +204,7 @@ export function FinanceDocumentsTable({
         ]}
         getRowId={(document) => String(document.id)}
         searchPlaceholder="Search finance documents..."
+        serverState={serverTable.state}
       />
 
       <FinanceDocumentDialog
@@ -797,8 +815,11 @@ function FinanceStatusBadge({ status }: { status: ContentStatus }) {
   return <Badge variant="outline">{CONTENT_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminFinanceDocuments() {
-  const response = await fetch("/api/admin/finance", {
+async function fetchAdminFinanceDocuments(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/finance?${searchParams}`
+    : "/api/admin/finance";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

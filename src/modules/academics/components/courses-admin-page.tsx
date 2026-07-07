@@ -10,21 +10,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CoursesTable } from "@/modules/academics/components/courses-table";
-import type { CourseRow } from "@/modules/academics/contracts";
-import { getSerializedCourses } from "@/modules/academics/queries";
+import {
+  getCoursesAdminStats,
+  getSerializedCoursePage,
+} from "@/modules/academics/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface CoursesAdminStats {
-  totalCourses: number;
-  levelGroups: number;
-  linkedResources: number;
-  lecturerAssignments: number;
-}
 
 export async function CoursesAdminPage() {
   const session = await requirePermission({ resource: "course", action: "read" });
-  const courses = await getSerializedCourses();
-  const stats = getCoursesAdminStats(courses);
+  const [coursePage, stats] = await Promise.all([
+    getSerializedCoursePage(parseDataTableQuery(new URLSearchParams())),
+    getCoursesAdminStats(),
+  ]);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "course",
@@ -70,7 +68,11 @@ export async function CoursesAdminPage() {
         />
       </section>
 
-      <CoursesTable initialCourses={courses} permissions={permissions} />
+      <CoursesTable
+        initialCourses={coursePage.items}
+        initialMeta={coursePage.meta}
+        permissions={permissions}
+      />
     </div>
   );
 }
@@ -97,19 +99,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getCoursesAdminStats(courses: CourseRow[]): CoursesAdminStats {
-  return {
-    totalCourses: courses.length,
-    levelGroups: new Set(courses.map((course) => course.level)).size,
-    linkedResources: courses.reduce(
-      (total, course) => total + course.resourceCount,
-      0,
-    ),
-    lecturerAssignments: courses.reduce(
-      (total, course) => total + course.lecturerCount,
-      0,
-    ),
-  };
 }

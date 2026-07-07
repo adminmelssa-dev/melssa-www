@@ -5,24 +5,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ScholarshipsTable } from "@/modules/scholarships/components/scholarships-table";
-import type { ScholarshipProgramRow } from "@/modules/scholarships/contracts";
-import { getSerializedScholarshipPrograms } from "@/modules/scholarships/queries";
+import {
+  getScholarshipAdminStats,
+  getSerializedScholarshipProgramPage,
+} from "@/modules/scholarships/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface ScholarshipStats {
-  total: number;
-  published: number;
-  draft: number;
-  archived: number;
-}
 
 export async function ScholarshipsAdminPage() {
   const session = await requirePermission({
     resource: "scholarship",
     action: "read",
   });
-  const programs = await getSerializedScholarshipPrograms();
-  const stats = getScholarshipStats(programs);
+  const [programPage, stats] = await Promise.all([
+    getSerializedScholarshipProgramPage(
+      parseDataTableQuery(new URLSearchParams()),
+    ),
+    getScholarshipAdminStats(),
+  ]);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "scholarship",
@@ -56,7 +56,11 @@ export async function ScholarshipsAdminPage() {
         <StatCard icon={Archive} label="Archived" value={stats.archived} />
       </section>
 
-      <ScholarshipsTable permissions={permissions} programs={programs} />
+      <ScholarshipsTable
+        initialMeta={programPage.meta}
+        permissions={permissions}
+        programs={programPage.items}
+      />
     </div>
   );
 }
@@ -83,17 +87,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getScholarshipStats(
-  programs: ScholarshipProgramRow[],
-): ScholarshipStats {
-  return {
-    total: programs.length,
-    published: programs.filter((program) => program.status === "published")
-      .length,
-    draft: programs.filter((program) => program.status === "draft").length,
-    archived: programs.filter((program) => program.status === "archived")
-      .length,
-  };
 }

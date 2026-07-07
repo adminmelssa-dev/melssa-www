@@ -10,21 +10,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EventsTable } from "@/modules/events/components/events-table";
-import type { EventRow } from "@/modules/events/contracts";
-import { getSerializedEvents } from "@/modules/events/queries";
+import {
+  getEventsAdminStats,
+  getSerializedEventPage,
+} from "@/modules/events/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface EventsAdminStats {
-  totalEvents: number;
-  publishedEvents: number;
-  draftEvents: number;
-  cancelledEvents: number;
-}
 
 export async function EventsAdminPage() {
   const session = await requirePermission({ resource: "event", action: "read" });
-  const events = await getSerializedEvents();
-  const stats = getEventsAdminStats(events);
+  const [eventPage, stats] = await Promise.all([
+    getSerializedEventPage(parseDataTableQuery(new URLSearchParams())),
+    getEventsAdminStats(),
+  ]);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "event",
@@ -62,7 +60,11 @@ export async function EventsAdminPage() {
         />
       </section>
 
-      <EventsTable initialEvents={events} permissions={permissions} />
+      <EventsTable
+        initialEvents={eventPage.items}
+        initialMeta={eventPage.meta}
+        permissions={permissions}
+      />
     </div>
   );
 }
@@ -89,15 +91,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getEventsAdminStats(events: EventRow[]): EventsAdminStats {
-  return {
-    totalEvents: events.length,
-    publishedEvents: events.filter((event) => event.status === "published")
-      .length,
-    draftEvents: events.filter((event) => event.status === "draft").length,
-    cancelledEvents: events.filter((event) => event.status === "cancelled")
-      .length,
-  };
 }

@@ -10,22 +10,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { StorageTable } from "@/modules/storage/components/storage-table";
-import type { StorageObjectRow } from "@/modules/storage/contracts";
-import { getSerializedStorageObjects } from "@/modules/storage/queries";
+import {
+  getSerializedStorageObjectPage,
+  getStorageAdminStats,
+} from "@/modules/storage/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { formatBytes } from "@/lib/format-bytes";
 import { requirePermission } from "@/server/auth/guards";
 
-interface StorageAdminStats {
-  totalObjects: number;
-  completedObjects: number;
-  deletedObjects: number;
-  completedBytes: number;
-}
-
 export async function StorageAdminPage() {
   await requirePermission({ resource: "storage", action: "audit" });
-  const storageObjects = await getSerializedStorageObjects();
-  const stats = getStorageAdminStats(storageObjects);
+  const [storagePage, stats] = await Promise.all([
+    getSerializedStorageObjectPage(parseDataTableQuery(new URLSearchParams())),
+    getStorageAdminStats(),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -53,7 +51,10 @@ export async function StorageAdminPage() {
         />
       </section>
 
-      <StorageTable initialStorageObjects={storageObjects} />
+      <StorageTable
+        initialMeta={storagePage.meta}
+        initialStorageObjects={storagePage.items}
+      />
     </div>
   );
 }
@@ -80,23 +81,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getStorageAdminStats(
-  storageObjects: StorageObjectRow[],
-): StorageAdminStats {
-  const completedObjects = storageObjects.filter(
-    (object) => object.status === "completed",
-  );
-
-  return {
-    totalObjects: storageObjects.length,
-    completedObjects: completedObjects.length,
-    deletedObjects: storageObjects.filter((object) => object.status === "deleted")
-      .length,
-    completedBytes: completedObjects.reduce(
-      (total, object) => total + object.byteSize,
-      0,
-    ),
-  };
 }

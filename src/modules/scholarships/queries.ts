@@ -5,12 +5,25 @@ import {
   asc,
   desc,
   eq,
+  ilike,
+  inArray,
+  or,
+  type SQL,
 } from "drizzle-orm";
 import { z } from "zod";
+import { contentStatusSchema } from "@/modules/content/contracts";
 import {
+  scholarshipApplicationModeSchema,
   scholarshipProgramRowSchema,
   type ScholarshipProgramRow,
 } from "@/modules/scholarships/contracts";
+import {
+  createDataTablePage,
+  getDataTableFilterValues,
+  getDataTableOffset,
+  type DataTablePage,
+  type DataTableQuery,
+} from "@/lib/data-table-query";
 import { db } from "@/server/db";
 import {
   scholarshipPrograms,
@@ -76,6 +89,13 @@ interface ScholarshipProgramQueryRow {
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ScholarshipAdminStats {
+  total: number;
+  published: number;
+  draft: number;
+  archived: number;
 }
 
 export async function getScholarshipPrograms(): Promise<
@@ -157,6 +177,51 @@ export async function getSerializedScholarshipPrograms(): Promise<
 > {
   const programs = await getScholarshipPrograms();
   return programs.map((program) => serializeScholarshipProgram(program));
+}
+
+export async function getSerializedScholarshipProgramPage(
+  query: DataTableQuery,
+): Promise<DataTablePage<ScholarshipProgramRow>> {
+  const where = getScholarshipProgramWhere(query);
+  const totalRows = await db.$count(scholarshipPrograms, where);
+  const rows = await scholarshipProgramSelect()
+    .from(scholarshipPrograms)
+    .leftJoin(
+      storageObjects,
+      and(
+        eq(storageObjects.id, scholarshipPrograms.attachmentStorageObjectId),
+        eq(storageObjects.status, "completed"),
+      ),
+    )
+    .leftJoin(user, eq(user.id, scholarshipPrograms.createdById))
+    .where(where)
+    .orderBy(...getScholarshipProgramOrderBy(query))
+    .limit(query.pageSize)
+    .offset(getDataTableOffset(query));
+
+  return createDataTablePage({
+    items: rows
+      .map(mapScholarshipProgramRow)
+      .map((program) => serializeScholarshipProgram(program)),
+    query,
+    totalRows,
+  });
+}
+
+export async function getScholarshipAdminStats(): Promise<ScholarshipAdminStats> {
+  const [total, published, draft, archived] = await Promise.all([
+    db.$count(scholarshipPrograms),
+    db.$count(scholarshipPrograms, eq(scholarshipPrograms.status, "published")),
+    db.$count(scholarshipPrograms, eq(scholarshipPrograms.status, "draft")),
+    db.$count(scholarshipPrograms, eq(scholarshipPrograms.status, "archived")),
+  ]);
+
+  return {
+    archived,
+    draft,
+    published,
+    total,
+  };
 }
 
 export async function getSerializedPublishedScholarshipPrograms(): Promise<
@@ -250,4 +315,94 @@ function mapScholarshipProgramRow(
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+function getScholarshipProgramWhere(query: DataTableQuery): SQL | undefined {
+  const conditions: SQL[] = [];
+  const statusFilters = getValidStatusFilters(
+    getDataTableFilterValues(query, "status"),
+  );
+  const applicationModeFilters = getValidApplicationModeFilters(
+    getDataTableFilterValues(query, "applicationMode"),
+  );
+
+  if (query.search) {
+    const pattern = `%${query.search}%`;
+    const searchCondition = or(
+      ilike(scholarshipPrograms.title, pattern),
+      ilike(scholarshipPrograms.slug, pattern),
+      ilike(scholarshipPrograms.providerName, pattern),
+      ilike(scholarshipPrograms.summary, pattern),
+      ilike(scholarshipPrograms.description, pattern),
+      ilike(scholarshipPrograms.academicYear, pattern),
+      ilike(scholarshipPrograms.amountDescription, pattern),
+      ilike(scholarshipPrograms.contactEmail, pattern),
+    );
+    if (searchCondition) conditions.push(searchCondition);
+  }
+
+  if (statusFilters.length > 0) {
+    conditions.push(inArray(scholarshipPrograms.status, statusFilters));
+  }
+
+  if (applicationModeFilters.length > 0) {
+    conditions.push(
+      inArray(scholarshipPrograms.applicationMode, applicationModeFilters),
+    );
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+function getScholarshipProgramOrderBy(query: DataTableQuery) {
+  const isAscending = query.sortDirection === "asc";
+
+  switch (query.sortBy) {
+    case "title":
+      return isAscending
+        ? [asc(scholarshipPrograms.title), asc(scholarshipPrograms.id)]
+        : [desc(scholarshipPrograms.title), desc(scholarshipPrograms.id)];
+    case "status":
+      return isAscending
+        ? [asc(scholarshipPrograms.status), desc(scholarshipPrograms.id)]
+        : [desc(scholarshipPrograms.status), desc(scholarshipPrograms.id)];
+    case "applicationMode":
+      return isAscending
+        ? [
+            asc(scholarshipPrograms.applicationMode),
+            desc(scholarshipPrograms.id),
+          ]
+        : [
+            desc(scholarshipPrograms.applicationMode),
+            desc(scholarshipPrograms.id),
+          ];
+    case "closesAt":
+      return isAscending
+        ? [asc(scholarshipPrograms.closesAt), asc(scholarshipPrograms.id)]
+        : [desc(scholarshipPrograms.closesAt), desc(scholarshipPrograms.id)];
+    default:
+      return [
+        asc(scholarshipPrograms.closesAt),
+        desc(scholarshipPrograms.publishedAt),
+        desc(scholarshipPrograms.createdAt),
+      ];
+  }
+}
+
+function getValidStatusFilters(
+  values: string[],
+): ScholarshipProgramRow["status"][] {
+  return values.flatMap((value) => {
+    const parsedValue = contentStatusSchema.safeParse(value);
+    return parsedValue.success ? [parsedValue.data] : [];
+  });
+}
+
+function getValidApplicationModeFilters(
+  values: string[],
+): ScholarshipProgramRow["applicationMode"][] {
+  return values.flatMap((value) => {
+    const parsedValue = scholarshipApplicationModeSchema.safeParse(value);
+    return parsedValue.success ? [parsedValue.data] : [];
+  });
 }

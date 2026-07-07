@@ -6,6 +6,7 @@ import {
   CONTENT_STATUS_OPTIONS,
   type ContentStatus,
 } from "@/modules/content/contracts";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export { CONTENT_STATUS_LABELS, CONTENT_STATUS_OPTIONS };
 
@@ -94,6 +95,7 @@ export const financeDocumentRowSchema = z.object({
 
 export const adminFinanceDocumentsResponseSchema = z.object({
   financeDocuments: z.array(financeDocumentRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 const financeDocumentInputBaseSchema = z.object({

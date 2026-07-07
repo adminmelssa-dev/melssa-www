@@ -19,6 +19,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +61,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 
 const adminConcernsQueryKey = ["admin-concerns"];
 
@@ -81,6 +83,7 @@ interface ConcernFormValues {
 
 interface ConcernsTableProps {
   initialConcerns: ConcernRow[];
+  initialMeta: DataTablePageMeta;
   permissions: ConcernTablePermissions;
 }
 
@@ -91,17 +94,31 @@ interface ConcernTablePermissions {
 
 export function ConcernsTable({
   initialConcerns,
+  initialMeta,
   permissions,
 }: ConcernsTableProps) {
   const [reviewingConcern, setReviewingConcern] =
     React.useState<ConcernRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const concernsQuery = useQuery({
-    queryKey: adminConcernsQueryKey,
-    queryFn: fetchAdminConcerns,
-    initialData: { concerns: initialConcerns },
+    queryKey: [...adminConcernsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminConcerns(serverTable.searchParams),
+    initialData: { concerns: initialConcerns, meta: initialMeta },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: concernsQuery.data.meta.pageCount,
+      totalRows: concernsQuery.data.meta.totalRows,
+    });
+  }, [
+    concernsQuery.data.meta.pageCount,
+    concernsQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const columns = React.useMemo(
     () => getColumns({ onReview: setReviewingConcern, permissions }),
@@ -144,6 +161,7 @@ export function ConcernsTable({
         getRowId={(concern) => String(concern.id)}
         initialColumnVisibility={{ attachmentStatus: false }}
         searchPlaceholder="Search concerns..."
+        serverState={serverTable.state}
       />
 
       {reviewingConcern ? (
@@ -486,8 +504,11 @@ function ConcernStatusBadge({ status }: { status: ConcernStatus }) {
   return <Badge variant="secondary">{CONCERN_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminConcerns() {
-  const response = await fetch("/api/admin/concerns", {
+async function fetchAdminConcerns(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/concerns?${searchParams}`
+    : "/api/admin/concerns";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

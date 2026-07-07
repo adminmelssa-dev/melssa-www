@@ -23,6 +23,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,6 +76,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 
 const adminBulletinsQueryKey = ["admin-bulletins"];
 
@@ -119,6 +121,7 @@ interface BulletinFormValues {
 
 interface BulletinsTableProps {
   initialBulletins: BulletinIssueRow[];
+  initialMeta: DataTablePageMeta;
   initialSubscriberCount: number;
   permissions: BulletinTablePermissions;
 }
@@ -132,6 +135,7 @@ interface BulletinTablePermissions {
 
 export function BulletinsTable({
   initialBulletins,
+  initialMeta,
   initialSubscriberCount,
   permissions,
 }: BulletinsTableProps) {
@@ -145,15 +149,29 @@ export function BulletinsTable({
   const [viewingDeliveries, setViewingDeliveries] =
     React.useState<BulletinIssueRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const bulletinsQuery = useQuery({
-    queryKey: adminBulletinsQueryKey,
-    queryFn: fetchAdminBulletins,
+    queryKey: [...adminBulletinsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminBulletins(serverTable.searchParams),
     initialData: {
       bulletins: initialBulletins,
+      meta: initialMeta,
       subscriberCount: initialSubscriberCount,
     },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: bulletinsQuery.data.meta.pageCount,
+      totalRows: bulletinsQuery.data.meta.totalRows,
+    });
+  }, [
+    bulletinsQuery.data.meta.pageCount,
+    bulletinsQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const sendMutation = useMutation({
     mutationFn: sendAdminBulletin,
@@ -238,6 +256,7 @@ export function BulletinsTable({
           deliveryHealth: false,
         }}
         searchPlaceholder="Search bulletins..."
+        serverState={serverTable.state}
       />
 
       <BulletinDialog
@@ -886,11 +905,31 @@ function BulletinDeliveriesDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const columns = React.useMemo(() => getDeliveryColumns(), []);
+  const serverTable = useServerDataTable({ initialPageSize: 8 });
+  const setPageMeta = serverTable.setPageMeta;
   const deliveriesQuery = useQuery({
-    queryKey: adminBulletinDeliveriesQueryKey(bulletin.id),
-    queryFn: () => fetchAdminBulletinDeliveries(bulletin.id),
+    queryKey: [
+      ...adminBulletinDeliveriesQueryKey(bulletin.id),
+      serverTable.queryKey,
+    ],
+    queryFn: () =>
+      fetchAdminBulletinDeliveries(bulletin.id, serverTable.searchParams),
   });
   const deliveries = deliveriesQuery.data?.deliveries ?? [];
+
+  React.useEffect(() => {
+    if (!deliveriesQuery.data) return;
+
+    setPageMeta({
+      pageCount: deliveriesQuery.data.meta.pageCount,
+      totalRows: deliveriesQuery.data.meta.totalRows,
+    });
+  }, [
+    deliveriesQuery.data,
+    deliveriesQuery.data?.meta.pageCount,
+    deliveriesQuery.data?.meta.totalRows,
+    setPageMeta,
+  ]);
 
   return (
     <Dialog onOpenChange={onOpenChange} open>
@@ -971,6 +1010,7 @@ function BulletinDeliveriesDialog({
             }}
             initialPageSize={8}
             searchPlaceholder="Search recipients..."
+            serverState={serverTable.state}
           />
         )}
       </DialogContent>
@@ -1242,8 +1282,10 @@ function BulletinStatusBadge({ status }: { status: BulletinIssueStatus }) {
   return <Badge variant="outline">{BULLETIN_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminBulletins(): Promise<AdminBulletinsResponse> {
-  const response = await fetch("/api/admin/bulletins", {
+async function fetchAdminBulletins(
+  searchParams: string,
+): Promise<AdminBulletinsResponse> {
+  const response = await fetch(`/api/admin/bulletins?${searchParams}`, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();
@@ -1325,10 +1367,14 @@ async function archiveAdminBulletin(
 
 async function fetchAdminBulletinDeliveries(
   bulletinId: number,
+  searchParams: string,
 ): Promise<AdminBulletinDeliveriesResponse> {
-  const response = await fetch(`/api/admin/bulletins/${bulletinId}/deliveries`, {
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetch(
+    `/api/admin/bulletins/${bulletinId}/deliveries?${searchParams}`,
+    {
+      headers: { Accept: "application/json" },
+    },
+  );
   const body: unknown = await response.json();
 
   if (!response.ok) {

@@ -23,7 +23,6 @@ function setCollapsed(collapsed: boolean): void {
   for (const listener of listeners) listener();
 }
 
-/** Sidebar collapse state, persisted to localStorage and synced across subscribers. */
 export function useSidebarCollapsed(): readonly [boolean, () => void] {
   const collapsed = useSyncExternalStore(
     subscribe,

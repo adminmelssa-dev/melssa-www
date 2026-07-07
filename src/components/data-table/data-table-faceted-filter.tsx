@@ -32,6 +32,7 @@ interface DataTableFacetedFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;
   title: string;
   options: FacetedFilterOption[];
+  showCounts?: boolean;
 }
 
 function toStringArray(value: unknown): string[] {
@@ -44,6 +45,7 @@ export function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
   options,
+  showCounts = true,
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set(toStringArray(column?.getFilterValue()));
@@ -105,7 +107,7 @@ export function DataTableFacetedFilter<TData, TValue>({
             <CommandGroup>
               {options.map((option) => {
                 const isSelected = selectedValues.has(option.value);
-                const count = facets?.get(option.value);
+                const count = showCounts ? facets?.get(option.value) : null;
 
                 return (
                   <CommandItem

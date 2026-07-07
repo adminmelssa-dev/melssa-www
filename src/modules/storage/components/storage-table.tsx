@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +27,7 @@ import {
   actionResultSchema,
 } from "@/lib/action-result";
 import { formatBytes } from "@/lib/format-bytes";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 
 const adminStorageQueryKey = ["admin-storage"];
 
@@ -38,15 +40,32 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 });
 
 interface StorageTableProps {
+  initialMeta: DataTablePageMeta;
   initialStorageObjects: StorageObjectRow[];
 }
 
-export function StorageTable({ initialStorageObjects }: StorageTableProps) {
+export function StorageTable({
+  initialMeta,
+  initialStorageObjects,
+}: StorageTableProps) {
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
   const storageQuery = useQuery({
-    queryKey: adminStorageQueryKey,
-    queryFn: fetchAdminStorage,
-    initialData: { storageObjects: initialStorageObjects },
+    queryKey: [...adminStorageQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminStorage(serverTable.searchParams),
+    initialData: { meta: initialMeta, storageObjects: initialStorageObjects },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: storageQuery.data.meta.pageCount,
+      totalRows: storageQuery.data.meta.totalRows,
+    });
+  }, [
+    setPageMeta,
+    storageQuery.data.meta.pageCount,
+    storageQuery.data.meta.totalRows,
+  ]);
 
   const columns = React.useMemo(() => getColumns(), []);
 
@@ -84,6 +103,7 @@ export function StorageTable({ initialStorageObjects }: StorageTableProps) {
       ]}
       getRowId={(object) => object.id}
       searchPlaceholder="Search storage..."
+      serverState={serverTable.state}
     />
   );
 }
@@ -209,8 +229,11 @@ function StorageStatusBadge({ status }: { status: StorageObjectStatus }) {
   );
 }
 
-async function fetchAdminStorage() {
-  const response = await fetch("/api/admin/storage", {
+async function fetchAdminStorage(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/storage?${searchParams}`
+    : "/api/admin/storage";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

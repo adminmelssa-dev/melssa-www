@@ -10,21 +10,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AuditTable } from "@/modules/audit/components/audit-table";
-import type { AuditLogRow } from "@/modules/audit/contracts";
-import { getSerializedAuditLogs } from "@/modules/audit/queries";
+import {
+  getAuditAdminStats,
+  getAuditLogFilterOptions,
+  getSerializedAuditLogPage,
+} from "@/modules/audit/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface AuditAdminStats {
-  totalEntries: number;
-  actorCount: number;
-  actionCount: number;
-  recentEntries: number;
-}
 
 export async function AuditAdminPage() {
   await requirePermission({ resource: "audit", action: "read" });
-  const auditLogs = await getSerializedAuditLogs();
-  const stats = getAuditStats(auditLogs);
+  const [auditPage, stats, filterOptions] = await Promise.all([
+    getSerializedAuditLogPage(
+      parseDataTableQuery(new URLSearchParams(), { defaultPageSize: 20 }),
+    ),
+    getAuditAdminStats(),
+    getAuditLogFilterOptions(),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -48,7 +50,11 @@ export async function AuditAdminPage() {
         <StatCard icon={Clock3} label="Last 24 hours" value={stats.recentEntries} />
       </section>
 
-      <AuditTable initialAuditLogs={auditLogs} />
+      <AuditTable
+        filterOptions={filterOptions}
+        initialAuditLogs={auditPage.items}
+        initialMeta={auditPage.meta}
+      />
     </div>
   );
 }
@@ -75,23 +81,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getAuditStats(auditLogs: AuditLogRow[]): AuditAdminStats {
-  const since = Date.now() - 24 * 60 * 60 * 1_000;
-  const actorIds = new Set(
-    auditLogs
-      .map((log) => log.actor?.id)
-      .filter((actorId): actorId is string => typeof actorId === "string"),
-  );
-  const actions = new Set(auditLogs.map((log) => log.action));
-
-  return {
-    totalEntries: auditLogs.length,
-    actorCount: actorIds.size,
-    actionCount: actions.size,
-    recentEntries: auditLogs.filter(
-      (log) => new Date(log.createdAt).getTime() >= since,
-    ).length,
-  };
 }

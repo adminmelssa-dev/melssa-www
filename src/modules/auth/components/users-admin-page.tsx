@@ -9,30 +9,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { AdminUserRow } from "@/modules/auth/contracts";
-import { ROLES } from "@/modules/auth/roles";
 import {
-  getSerializedAdminInvitations,
-  getSerializedAdminUsers,
+  getSerializedAdminInvitationPage,
+  getSerializedAdminUserPage,
+  getUsersAdminStats,
 } from "@/modules/auth/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { InvitationsPanel } from "@/modules/auth/components/invitations-panel";
 import { UsersTable } from "@/modules/auth/components/users-table";
 import { requirePermission } from "@/server/auth/guards";
-
-interface UsersAdminStats {
-  totalUsers: number;
-  siteAdmins: number;
-  verifiedUsers: number;
-  restrictedUsers: number;
-}
 
 export async function UsersAdminPage() {
   const actorSession = await requirePermission({
     resource: "user",
     action: "list",
   });
-  const users = await getSerializedAdminUsers();
-  const stats = getUsersAdminStats(users);
+  const [userPage, stats] = await Promise.all([
+    getSerializedAdminUserPage(parseDataTableQuery(new URLSearchParams())),
+    getUsersAdminStats(),
+  ]);
   const permissions = {
     canSetRole: actorSession.permissions.has({
       resource: "user",
@@ -51,9 +46,11 @@ export async function UsersAdminPage() {
       action: "update",
     }),
   };
-  const invitations = permissions.canSetRole
-    ? await getSerializedAdminInvitations()
-    : [];
+  const invitationPage = permissions.canSetRole
+    ? await getSerializedAdminInvitationPage(
+        parseDataTableQuery(new URLSearchParams(), { defaultPageSize: 5 }),
+      )
+    : null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -83,12 +80,23 @@ export async function UsersAdminPage() {
 
       <UsersTable
         currentUserId={actorSession.user.id}
-        initialUsers={users}
+        initialMeta={userPage.meta}
+        initialUsers={userPage.items}
         permissions={permissions}
       />
 
       {permissions.canSetRole ? (
-        <InvitationsPanel initialInvitations={invitations} />
+        <InvitationsPanel
+          initialInvitations={invitationPage?.items ?? []}
+          initialMeta={
+            invitationPage?.meta ?? {
+              pageCount: 1,
+              pageIndex: 0,
+              pageSize: 5,
+              totalRows: 0,
+            }
+          }
+        />
       ) : null}
     </div>
   );
@@ -116,13 +124,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getUsersAdminStats(users: AdminUserRow[]): UsersAdminStats {
-  return {
-    totalUsers: users.length,
-    siteAdmins: users.filter((item) => item.role === ROLES.SITE_ADMIN).length,
-    verifiedUsers: users.filter((item) => item.emailVerified).length,
-    restrictedUsers: users.filter((item) => item.banned).length,
-  };
 }

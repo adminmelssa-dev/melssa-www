@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export const academicLevelSchema = z.union([
   z.literal("level100"),
@@ -74,6 +75,7 @@ export const courseRowSchema = z.object({
 
 export const adminCoursesResponseSchema = z.object({
   courses: z.array(courseRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export const createCourseInputSchema = z.object({

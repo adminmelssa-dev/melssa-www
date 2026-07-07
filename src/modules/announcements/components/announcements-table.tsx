@@ -19,6 +19,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminAnnouncementsQueryKey = ["admin-announcements"];
@@ -92,6 +94,7 @@ interface AnnouncementFormValues {
 
 interface AnnouncementsTableProps {
   initialAnnouncements: AnnouncementRow[];
+  initialMeta: DataTablePageMeta;
   permissions: AnnouncementTablePermissions;
 }
 
@@ -104,6 +107,7 @@ interface AnnouncementTablePermissions {
 
 export function AnnouncementsTable({
   initialAnnouncements,
+  initialMeta,
   permissions,
 }: AnnouncementsTableProps) {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -112,12 +116,25 @@ export function AnnouncementsTable({
   const [deletingAnnouncement, setDeletingAnnouncement] =
     React.useState<AnnouncementRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const announcementsQuery = useQuery({
-    queryKey: adminAnnouncementsQueryKey,
-    queryFn: fetchAdminAnnouncements,
-    initialData: { announcements: initialAnnouncements },
+    queryKey: [...adminAnnouncementsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminAnnouncements(serverTable.searchParams),
+    initialData: { announcements: initialAnnouncements, meta: initialMeta },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: announcementsQuery.data.meta.pageCount,
+      totalRows: announcementsQuery.data.meta.totalRows,
+    });
+  }, [
+    announcementsQuery.data.meta.pageCount,
+    announcementsQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminAnnouncement,
@@ -188,6 +205,7 @@ export function AnnouncementsTable({
         getRowId={(announcement) => String(announcement.id)}
         initialColumnVisibility={{ attachmentStatus: false }}
         searchPlaceholder="Search announcements..."
+        serverState={serverTable.state}
       />
 
       <AnnouncementDialog
@@ -720,8 +738,11 @@ function AnnouncementStatusBadge({ status }: { status: ContentStatus }) {
   return <Badge variant="outline">{CONTENT_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminAnnouncements() {
-  const response = await fetch("/api/admin/announcements", {
+async function fetchAdminAnnouncements(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/announcements?${searchParams}`
+    : "/api/admin/announcements";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

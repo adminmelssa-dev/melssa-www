@@ -10,24 +10,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AnnouncementsTable } from "@/modules/announcements/components/announcements-table";
-import type { AnnouncementRow } from "@/modules/announcements/contracts";
-import { getSerializedAnnouncements } from "@/modules/announcements/queries";
+import {
+  getAnnouncementsAdminStats,
+  getSerializedAnnouncementPage,
+} from "@/modules/announcements/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface AnnouncementsAdminStats {
-  totalAnnouncements: number;
-  publishedAnnouncements: number;
-  draftAnnouncements: number;
-  archivedAnnouncements: number;
-}
 
 export async function AnnouncementsAdminPage() {
   const session = await requirePermission({
     resource: "announcement",
     action: "read",
   });
-  const announcements = await getSerializedAnnouncements();
-  const stats = getAnnouncementsAdminStats(announcements);
+  const [announcementPage, stats] = await Promise.all([
+    getSerializedAnnouncementPage(parseDataTableQuery(new URLSearchParams())),
+    getAnnouncementsAdminStats(),
+  ]);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "announcement",
@@ -78,7 +76,8 @@ export async function AnnouncementsAdminPage() {
       </section>
 
       <AnnouncementsTable
-        initialAnnouncements={announcements}
+        initialAnnouncements={announcementPage.items}
+        initialMeta={announcementPage.meta}
         permissions={permissions}
       />
     </div>
@@ -107,21 +106,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getAnnouncementsAdminStats(
-  announcements: AnnouncementRow[],
-): AnnouncementsAdminStats {
-  return {
-    totalAnnouncements: announcements.length,
-    publishedAnnouncements: announcements.filter(
-      (announcement) => announcement.status === "published",
-    ).length,
-    draftAnnouncements: announcements.filter(
-      (announcement) => announcement.status === "draft",
-    ).length,
-    archivedAnnouncements: announcements.filter(
-      (announcement) => announcement.status === "archived",
-    ).length,
-  };
 }

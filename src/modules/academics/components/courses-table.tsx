@@ -17,6 +17,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,6 +64,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 
 const adminCoursesQueryKey = ["admin-courses"];
 
@@ -82,6 +84,7 @@ interface CourseFormValues {
 
 interface CoursesTableProps {
   initialCourses: CourseRow[];
+  initialMeta: DataTablePageMeta;
   permissions: CourseTablePermissions;
 }
 
@@ -93,6 +96,7 @@ interface CourseTablePermissions {
 
 export function CoursesTable({
   initialCourses,
+  initialMeta,
   permissions,
 }: CoursesTableProps) {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -101,12 +105,25 @@ export function CoursesTable({
   const [deletingCourse, setDeletingCourse] =
     React.useState<CourseRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const coursesQuery = useQuery({
-    queryKey: adminCoursesQueryKey,
-    queryFn: fetchAdminCourses,
-    initialData: { courses: initialCourses },
+    queryKey: [...adminCoursesQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminCourses(serverTable.searchParams),
+    initialData: { courses: initialCourses, meta: initialMeta },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: coursesQuery.data.meta.pageCount,
+      totalRows: coursesQuery.data.meta.totalRows,
+    });
+  }, [
+    coursesQuery.data.meta.pageCount,
+    coursesQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminCourse,
@@ -168,6 +185,7 @@ export function CoursesTable({
         getRowId={(course) => String(course.id)}
         initialColumnVisibility={{ title: false }}
         searchPlaceholder="Search by code or title..."
+        serverState={serverTable.state}
       />
 
       <CourseDialog
@@ -614,8 +632,8 @@ function DeleteCourseDialog({
   );
 }
 
-async function fetchAdminCourses() {
-  const response = await fetch("/api/admin/courses", {
+async function fetchAdminCourses(searchParams: string) {
+  const response = await fetch(`/api/admin/courses?${searchParams}`, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

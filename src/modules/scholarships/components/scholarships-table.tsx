@@ -20,6 +20,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminScholarshipsQueryKey = ["admin-scholarships"];
@@ -107,11 +109,13 @@ interface ScholarshipTablePermissions {
 }
 
 interface ScholarshipsTableProps {
+  initialMeta: DataTablePageMeta;
   programs: ScholarshipProgramRow[];
   permissions: ScholarshipTablePermissions;
 }
 
 export function ScholarshipsTable({
+  initialMeta,
   programs,
   permissions,
 }: ScholarshipsTableProps) {
@@ -121,12 +125,25 @@ export function ScholarshipsTable({
   const [deletingProgram, setDeletingProgram] =
     React.useState<ScholarshipProgramRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const scholarshipsQuery = useQuery({
-    queryKey: adminScholarshipsQueryKey,
-    queryFn: fetchAdminScholarships,
-    initialData: { scholarshipPrograms: programs },
+    queryKey: [...adminScholarshipsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminScholarships(serverTable.searchParams),
+    initialData: { meta: initialMeta, scholarshipPrograms: programs },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: scholarshipsQuery.data.meta.pageCount,
+      totalRows: scholarshipsQuery.data.meta.totalRows,
+    });
+  }, [
+    scholarshipsQuery.data.meta.pageCount,
+    scholarshipsQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminScholarshipProgram,
@@ -189,6 +206,7 @@ export function ScholarshipsTable({
         ]}
         getRowId={(program) => String(program.id)}
         searchPlaceholder="Search scholarships..."
+        serverState={serverTable.state}
       />
 
       <ScholarshipDialog
@@ -880,8 +898,8 @@ function ScholarshipStatusBadge({ status }: { status: ContentStatus }) {
   return <Badge variant="outline">{CONTENT_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminScholarships() {
-  const response = await fetch("/api/admin/scholarships", {
+async function fetchAdminScholarships(searchParams: string) {
+  const response = await fetch(`/api/admin/scholarships?${searchParams}`, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

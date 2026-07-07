@@ -5,6 +5,7 @@ import {
   type PermissionResource,
 } from "@/modules/auth/permissions";
 import { ROLES } from "@/modules/auth/roles";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export const normalizedEmailSchema = z
   .string()
@@ -56,6 +57,7 @@ export const adminUserRowSchema = z.object({
 });
 
 export const adminUsersResponseSchema = z.object({
+  meta: dataTablePageMetaSchema,
   users: z.array(adminUserRowSchema),
 });
 
@@ -83,6 +85,7 @@ export const adminInvitationRowSchema = z.object({
 
 export const adminInvitationsResponseSchema = z.object({
   invitations: z.array(adminInvitationRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export const inviteAdminUserInputSchema = z.object({

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export const auditMetadataValueSchema = z.union([
   z.string(),
@@ -30,6 +31,7 @@ export const auditLogRowSchema = z.object({
 
 export const adminAuditLogsResponseSchema = z.object({
   auditLogs: z.array(auditLogRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export type AuditMetadataValue = z.infer<typeof auditMetadataValueSchema>;
@@ -39,3 +41,8 @@ export type AuditLogRow = z.infer<typeof auditLogRowSchema>;
 export type AdminAuditLogsResponse = z.infer<
   typeof adminAuditLogsResponseSchema
 >;
+
+export interface AuditLogFilterOptions {
+  actions: { label: string; value: string }[];
+  entityTypes: { label: string; value: string }[];
+}

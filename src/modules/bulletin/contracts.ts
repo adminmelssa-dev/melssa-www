@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 const normalizedEmailSchema = z
   .string()
@@ -205,11 +206,13 @@ export const bulletinIssueRowSchema = z.object({
 
 export const adminBulletinsResponseSchema = z.object({
   bulletins: z.array(bulletinIssueRowSchema),
+  meta: dataTablePageMetaSchema,
   subscriberCount: z.number(),
 });
 
 export const adminBulletinDeliveriesResponseSchema = z.object({
   deliveries: z.array(bulletinDeliveryRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export const bulletinUnsubscribeInputSchema = z.object({

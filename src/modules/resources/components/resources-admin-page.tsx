@@ -11,27 +11,23 @@ import {
 } from "@/components/ui/card";
 import { getSerializedCourses } from "@/modules/academics/queries";
 import { ResourcesTable } from "@/modules/resources/components/resources-table";
-import type { ResourceRow } from "@/modules/resources/contracts";
-import { getSerializedResources } from "@/modules/resources/queries";
+import {
+  getResourcesAdminStats,
+  getSerializedResourcePage,
+} from "@/modules/resources/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface ResourcesAdminStats {
-  totalResources: number;
-  publishedResources: number;
-  draftResources: number;
-  archivedResources: number;
-}
 
 export async function ResourcesAdminPage() {
   const session = await requirePermission({
     resource: "resource",
     action: "read",
   });
-  const [resources, courses] = await Promise.all([
-    getSerializedResources(),
+  const [resourcePage, courses, stats] = await Promise.all([
+    getSerializedResourcePage(parseDataTableQuery(new URLSearchParams())),
     getSerializedCourses(),
+    getResourcesAdminStats(),
   ]);
-  const stats = getResourcesAdminStats(resources);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "resource",
@@ -79,7 +75,8 @@ export async function ResourcesAdminPage() {
 
       <ResourcesTable
         initialCourses={courses}
-        initialResources={resources}
+        initialMeta={resourcePage.meta}
+        initialResources={resourcePage.items}
         permissions={permissions}
       />
     </div>
@@ -108,20 +105,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getResourcesAdminStats(
-  resources: ResourceRow[],
-): ResourcesAdminStats {
-  return {
-    totalResources: resources.length,
-    publishedResources: resources.filter(
-      (resource) => resource.status === "published",
-    ).length,
-    draftResources: resources.filter((resource) => resource.status === "draft")
-      .length,
-    archivedResources: resources.filter(
-      (resource) => resource.status === "archived",
-    ).length,
-  };
 }

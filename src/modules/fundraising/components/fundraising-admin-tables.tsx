@@ -21,6 +21,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,8 @@ import {
   FUNDRAISING_INQUIRY_STATUS_LABELS,
   FUNDRAISING_INQUIRY_STATUS_OPTIONS,
   adminFundraisingMutationSchema,
-  adminFundraisingResponseSchema,
+  adminFundraisingCampaignsResponseSchema,
+  adminFundraisingInquiriesResponseSchema,
   createFundraisingCampaignInputSchema,
   fundraisingInquiryStatusSchema,
   updateFundraisingCampaignInputSchema,
@@ -74,6 +76,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminFundraisingQueryKey = ["admin-fundraising"];
@@ -121,7 +124,9 @@ interface InquiryFormValues {
 
 interface FundraisingAdminTablesProps {
   campaigns: FundraisingCampaignRow[];
+  campaignMeta: DataTablePageMeta;
   inquiries: FundraisingInquiryRow[];
+  inquiryMeta: DataTablePageMeta;
   permissions: FundraisingTablePermissions;
 }
 
@@ -139,7 +144,9 @@ type AmountParseResult =
 
 export function FundraisingAdminTables({
   campaigns,
+  campaignMeta,
   inquiries,
+  inquiryMeta,
   permissions,
 }: FundraisingAdminTablesProps) {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -150,12 +157,44 @@ export function FundraisingAdminTables({
   const [reviewingInquiry, setReviewingInquiry] =
     React.useState<FundraisingInquiryRow | null>(null);
   const queryClient = useQueryClient();
+  const campaignTable = useServerDataTable();
+  const inquiryTable = useServerDataTable();
+  const setCampaignPageMeta = campaignTable.setPageMeta;
+  const setInquiryPageMeta = inquiryTable.setPageMeta;
 
-  const fundraisingQuery = useQuery({
-    queryKey: adminFundraisingQueryKey,
-    queryFn: fetchAdminFundraising,
-    initialData: { campaigns, inquiries },
+  const campaignsQuery = useQuery({
+    queryKey: [...adminFundraisingQueryKey, "campaigns", campaignTable.queryKey],
+    queryFn: () => fetchAdminFundraisingCampaigns(campaignTable.searchParams),
+    initialData: { campaigns, meta: campaignMeta },
   });
+
+  const inquiriesQuery = useQuery({
+    queryKey: [...adminFundraisingQueryKey, "inquiries", inquiryTable.queryKey],
+    queryFn: () => fetchAdminFundraisingInquiries(inquiryTable.searchParams),
+    initialData: { inquiries, meta: inquiryMeta },
+  });
+
+  React.useEffect(() => {
+    setCampaignPageMeta({
+      pageCount: campaignsQuery.data.meta.pageCount,
+      totalRows: campaignsQuery.data.meta.totalRows,
+    });
+  }, [
+    campaignsQuery.data.meta.pageCount,
+    campaignsQuery.data.meta.totalRows,
+    setCampaignPageMeta,
+  ]);
+
+  React.useEffect(() => {
+    setInquiryPageMeta({
+      pageCount: inquiriesQuery.data.meta.pageCount,
+      totalRows: inquiriesQuery.data.meta.totalRows,
+    });
+  }, [
+    inquiriesQuery.data.meta.pageCount,
+    inquiriesQuery.data.meta.totalRows,
+    setInquiryPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminFundraisingCampaign,
@@ -202,7 +241,7 @@ export function FundraisingAdminTables({
         </div>
         <DataTable
           columns={campaignColumns}
-          data={fundraisingQuery.data.campaigns}
+          data={campaignsQuery.data.campaigns}
           emptyState={
             <EmptyTableState
               icon={BadgeDollarSign}
@@ -219,6 +258,7 @@ export function FundraisingAdminTables({
           ]}
           getRowId={(campaign) => String(campaign.id)}
           searchPlaceholder="Search campaigns..."
+          serverState={campaignTable.state}
         />
       </section>
 
@@ -226,7 +266,7 @@ export function FundraisingAdminTables({
         <h2 className="font-heading text-xl">Sponsor inquiries</h2>
         <DataTable
           columns={inquiryColumns}
-          data={fundraisingQuery.data.inquiries}
+          data={inquiriesQuery.data.inquiries}
           emptyState={
             <EmptyTableState
               icon={Mail}
@@ -243,6 +283,7 @@ export function FundraisingAdminTables({
           ]}
           getRowId={(inquiry) => String(inquiry.id)}
           searchPlaceholder="Search inquiries..."
+          serverState={inquiryTable.state}
         />
       </section>
 
@@ -1333,10 +1374,13 @@ function InquiryStatusBadge({ status }: { status: FundraisingInquiryStatus }) {
   return <Badge variant="outline">{FUNDRAISING_INQUIRY_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminFundraising() {
-  const response = await fetch("/api/admin/fundraising", {
-    headers: { Accept: "application/json" },
-  });
+async function fetchAdminFundraisingCampaigns(searchParams: string) {
+  const response = await fetch(
+    `/api/admin/fundraising/campaigns?${searchParams}`,
+    {
+      headers: { Accept: "application/json" },
+    },
+  );
   const body: unknown = await response.json();
 
   if (!response.ok) {
@@ -1344,11 +1388,32 @@ async function fetchAdminFundraising() {
     throw new Error(
       parsedError.success
         ? parsedError.data.message
-        : "Failed to load fundraising data.",
+        : "Failed to load fundraising campaigns.",
     );
   }
 
-  return adminFundraisingResponseSchema.parse(body);
+  return adminFundraisingCampaignsResponseSchema.parse(body);
+}
+
+async function fetchAdminFundraisingInquiries(searchParams: string) {
+  const response = await fetch(
+    `/api/admin/fundraising/inquiries?${searchParams}`,
+    {
+      headers: { Accept: "application/json" },
+    },
+  );
+  const body: unknown = await response.json();
+
+  if (!response.ok) {
+    const parsedError = actionResultSchema.safeParse(body);
+    throw new Error(
+      parsedError.success
+        ? parsedError.data.message
+        : "Failed to load fundraising inquiries.",
+    );
+  }
+
+  return adminFundraisingInquiriesResponseSchema.parse(body);
 }
 
 async function createAdminFundraisingCampaign(

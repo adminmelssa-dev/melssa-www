@@ -4,7 +4,10 @@ import {
   createBulletinIssueInputSchema,
   type AdminBulletinMutation,
 } from "@/modules/bulletin/contracts";
-import { getSerializedAdminBulletins } from "@/modules/bulletin/queries";
+import {
+  getActiveBulletinSubscriberCount,
+  getSerializedBulletinIssuePage,
+} from "@/modules/bulletin/queries";
 import {
   archiveBulletinIssue,
   createBulletinIssue,
@@ -12,18 +15,27 @@ import {
   updateBulletinIssue,
 } from "@/modules/bulletin/server/issues";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({
     resource: "bulletin",
     action: "read",
   });
   if (!guard.ok) return guard.response;
 
-  const response = await getSerializedAdminBulletins();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const [page, subscriberCount] = await Promise.all([
+    getSerializedBulletinIssuePage(query),
+    getActiveBulletinSubscriberCount(),
+  ]);
 
-  return NextResponse.json(response);
+  return NextResponse.json({
+    bulletins: page.items,
+    meta: page.meta,
+    subscriberCount,
+  });
 }
 
 export async function POST(request: Request) {

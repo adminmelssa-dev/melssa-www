@@ -5,33 +5,28 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FundraisingAdminTables } from "@/modules/fundraising/components/fundraising-admin-tables";
-import type {
-  FundraisingCampaignRow,
-  FundraisingInquiryRow,
-} from "@/modules/fundraising/contracts";
 import {
-  getSerializedFundraisingCampaigns,
-  getSerializedFundraisingInquiries,
+  getFundraisingAdminStats,
+  getSerializedFundraisingCampaignPage,
+  getSerializedFundraisingInquiryPage,
 } from "@/modules/fundraising/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface FundraisingStats {
-  campaigns: number;
-  publishedCampaigns: number;
-  inquiries: number;
-  openInquiries: number;
-}
 
 export async function FundraisingAdminPage() {
   const session = await requirePermission({
     resource: "fundraising",
     action: "read",
   });
-  const [campaigns, inquiries] = await Promise.all([
-    getSerializedFundraisingCampaigns(),
-    getSerializedFundraisingInquiries(),
+  const [campaignPage, inquiryPage, stats] = await Promise.all([
+    getSerializedFundraisingCampaignPage(
+      parseDataTableQuery(new URLSearchParams()),
+    ),
+    getSerializedFundraisingInquiryPage(
+      parseDataTableQuery(new URLSearchParams()),
+    ),
+    getFundraisingAdminStats(),
   ]);
-  const stats = getFundraisingStats(campaigns, inquiries);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "fundraising",
@@ -82,8 +77,10 @@ export async function FundraisingAdminPage() {
       </section>
 
       <FundraisingAdminTables
-        campaigns={campaigns}
-        inquiries={inquiries}
+        campaignMeta={campaignPage.meta}
+        campaigns={campaignPage.items}
+        inquiries={inquiryPage.items}
+        inquiryMeta={inquiryPage.meta}
         permissions={permissions}
       />
     </div>
@@ -112,21 +109,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getFundraisingStats(
-  campaigns: FundraisingCampaignRow[],
-  inquiries: FundraisingInquiryRow[],
-): FundraisingStats {
-  return {
-    campaigns: campaigns.length,
-    publishedCampaigns: campaigns.filter(
-      (campaign) => campaign.status === "published",
-    ).length,
-    inquiries: inquiries.length,
-    openInquiries: inquiries.filter(
-      (inquiry) =>
-        inquiry.status === "new" || inquiry.status === "reviewing",
-    ).length,
-  };
 }

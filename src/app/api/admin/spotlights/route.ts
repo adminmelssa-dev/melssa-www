@@ -4,7 +4,7 @@ import {
   deleteSpotlightInputSchema,
   updateSpotlightInputSchema,
 } from "@/modules/spotlights/contracts";
-import { getSerializedSpotlights } from "@/modules/spotlights/queries";
+import { getSerializedSpotlightPage } from "@/modules/spotlights/queries";
 import {
   createSpotlight,
   deleteSpotlight,
@@ -14,18 +14,20 @@ import {
   errorResult,
   successResult,
 } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({
     resource: "spotlight",
     action: "read",
   });
   if (!guard.ok) return guard.response;
 
-  const spotlights = await getSerializedSpotlights();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedSpotlightPage(query);
 
-  return NextResponse.json({ spotlights });
+  return NextResponse.json({ meta: page.meta, spotlights: page.items });
 }
 
 export async function POST(request: Request) {

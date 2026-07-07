@@ -18,6 +18,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +54,7 @@ import {
   type InviteAdminUserInput,
 } from "@/modules/auth/contracts";
 import { actionResultSchema } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import { ROLE_LABELS, ROLES, type UserRole } from "@/modules/auth/roles";
 
 const adminInvitationsQueryKey = ["admin-invitations"];
@@ -90,18 +92,33 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 
 interface InvitationsPanelProps {
   initialInvitations: AdminInvitationRow[];
+  initialMeta: DataTablePageMeta;
 }
 
 export function InvitationsPanel({
   initialInvitations,
+  initialMeta,
 }: InvitationsPanelProps) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const serverTable = useServerDataTable({ initialPageSize: 5 });
+  const setPageMeta = serverTable.setPageMeta;
   const invitationsQuery = useQuery({
-    queryKey: adminInvitationsQueryKey,
-    queryFn: fetchAdminInvitations,
-    initialData: { invitations: initialInvitations },
+    queryKey: [...adminInvitationsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminInvitations(serverTable.searchParams),
+    initialData: { invitations: initialInvitations, meta: initialMeta },
   });
   const columns = React.useMemo(() => getColumns(), []);
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: invitationsQuery.data.meta.pageCount,
+      totalRows: invitationsQuery.data.meta.totalRows,
+    });
+  }, [
+    invitationsQuery.data.meta.pageCount,
+    invitationsQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   return (
     <section className="space-y-4">
@@ -139,6 +156,7 @@ export function InvitationsPanel({
         }}
         initialPageSize={5}
         searchPlaceholder="Search invitations..."
+        serverState={serverTable.state}
       />
 
       <InviteUserDialog
@@ -423,8 +441,8 @@ function useInvitationMutation() {
   });
 }
 
-async function fetchAdminInvitations() {
-  const response = await fetch("/api/admin/invitations", {
+async function fetchAdminInvitations(searchParams: string) {
+  const response = await fetch(`/api/admin/invitations?${searchParams}`, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

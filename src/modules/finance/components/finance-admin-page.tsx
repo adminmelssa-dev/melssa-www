@@ -5,21 +5,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FinanceDocumentsTable } from "@/modules/finance/components/finance-documents-table";
-import type { FinanceDocumentRow } from "@/modules/finance/contracts";
-import { getSerializedFinanceDocuments } from "@/modules/finance/queries";
+import {
+  getFinanceStats,
+  getSerializedFinanceDocumentPage,
+} from "@/modules/finance/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface FinanceStats {
-  total: number;
-  published: number;
-  draft: number;
-  archived: number;
-}
 
 export async function FinanceAdminPage() {
   const session = await requirePermission({ resource: "finance", action: "read" });
-  const documents = await getSerializedFinanceDocuments();
-  const stats = getFinanceStats(documents);
+  const [documentPage, stats] = await Promise.all([
+    getSerializedFinanceDocumentPage(parseDataTableQuery(new URLSearchParams())),
+    getFinanceStats(),
+  ]);
   const permissions = {
     canCreate: session.permissions.has({ resource: "finance", action: "create" }),
     canUpdate: session.permissions.has({ resource: "finance", action: "update" }),
@@ -44,7 +42,11 @@ export async function FinanceAdminPage() {
         <StatCard icon={Archive} label="Archived" value={stats.archived} />
       </section>
 
-      <FinanceDocumentsTable documents={documents} permissions={permissions} />
+      <FinanceDocumentsTable
+        documents={documentPage.items}
+        initialMeta={documentPage.meta}
+        permissions={permissions}
+      />
     </div>
   );
 }
@@ -71,15 +73,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getFinanceStats(documents: FinanceDocumentRow[]): FinanceStats {
-  return {
-    total: documents.length,
-    published: documents.filter((document) => document.status === "published")
-      .length,
-    draft: documents.filter((document) => document.status === "draft").length,
-    archived: documents.filter((document) => document.status === "archived")
-      .length,
-  };
 }

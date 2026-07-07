@@ -23,6 +23,7 @@ interface DataTableToolbarProps<TData> {
   searchPlaceholder?: string;
   filters?: DataTableFilterConfig[];
   bulkActions?: (table: Table<TData>) => ReactNode;
+  showFacetedCounts?: boolean;
 }
 
 export function DataTableToolbar<TData>({
@@ -30,6 +31,7 @@ export function DataTableToolbar<TData>({
   searchPlaceholder = "Search...",
   filters = [],
   bulkActions,
+  showFacetedCounts = true,
 }: DataTableToolbarProps<TData>) {
   const globalFilter =
     typeof table.getState().globalFilter === "string"
@@ -61,6 +63,7 @@ export function DataTableToolbar<TData>({
               column={column}
               key={filter.columnId}
               options={filter.options}
+              showCounts={showFacetedCounts}
               title={filter.title}
             />
           ) : null;

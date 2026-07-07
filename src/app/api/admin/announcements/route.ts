@@ -4,25 +4,27 @@ import {
   deleteAnnouncementInputSchema,
   updateAnnouncementInputSchema,
 } from "@/modules/announcements/contracts";
-import { getSerializedAnnouncements } from "@/modules/announcements/queries";
+import { getSerializedAnnouncementPage } from "@/modules/announcements/queries";
 import {
   createAnnouncement,
   deleteAnnouncement,
   updateAnnouncement,
 } from "@/modules/announcements/server/announcements";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({
     resource: "announcement",
     action: "read",
   });
   if (!guard.ok) return guard.response;
 
-  const announcements = await getSerializedAnnouncements();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedAnnouncementPage(query);
 
-  return NextResponse.json({ announcements });
+  return NextResponse.json({ announcements: page.items, meta: page.meta });
 }
 
 export async function POST(request: Request) {

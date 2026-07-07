@@ -3,14 +3,29 @@ import "server-only";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  type SQL,
 } from "drizzle-orm";
 import { z } from "zod";
 import {
   eventRowSchema,
   type EventRow,
 } from "@/modules/events/contracts";
+import { eventStatusSchema } from "@/modules/content/contracts";
+import {
+  createDataTablePage,
+  getDataTableFilterValues,
+  getDataTableOffset,
+  type DataTablePage,
+  type DataTableQuery,
+} from "@/lib/data-table-query";
 import { db } from "@/server/db";
 import {
   events,
@@ -58,6 +73,13 @@ interface EventQueryRow {
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface EventsAdminStats {
+  totalEvents: number;
+  publishedEvents: number;
+  draftEvents: number;
+  cancelledEvents: number;
 }
 
 export async function getEvents(): Promise<EventListItem[]> {
@@ -113,6 +135,61 @@ export function serializeEvent(item: EventListItem): EventRow {
 export async function getSerializedEvents(): Promise<EventRow[]> {
   const eventRows = await getEvents();
   return eventRows.map((item) => serializeEvent(item));
+}
+
+export async function getSerializedEventPage(
+  query: DataTableQuery,
+): Promise<DataTablePage<EventRow>> {
+  const where = getEventWhere(query);
+  const [totalRow] = await db
+    .select({ value: count() })
+    .from(events)
+    .leftJoin(user, eq(user.id, events.createdById))
+    .leftJoin(
+      storageObjects,
+      and(
+        eq(storageObjects.id, events.posterStorageObjectId),
+        eq(storageObjects.status, "completed"),
+      ),
+    )
+    .where(where);
+  const rows = await eventSelect()
+    .from(events)
+    .leftJoin(user, eq(user.id, events.createdById))
+    .leftJoin(
+      storageObjects,
+      and(
+        eq(storageObjects.id, events.posterStorageObjectId),
+        eq(storageObjects.status, "completed"),
+      ),
+    )
+    .where(where)
+    .orderBy(...getEventOrderBy(query))
+    .limit(query.pageSize)
+    .offset(getDataTableOffset(query));
+
+  return createDataTablePage({
+    items: rows.map(mapEventRow).map((event) => serializeEvent(event)),
+    query,
+    totalRows: totalRow?.value ?? 0,
+  });
+}
+
+export async function getEventsAdminStats(): Promise<EventsAdminStats> {
+  const [totalEvents, publishedEvents, draftEvents, cancelledEvents] =
+    await Promise.all([
+      db.$count(events),
+      db.$count(events, eq(events.status, "published")),
+      db.$count(events, eq(events.status, "draft")),
+      db.$count(events, eq(events.status, "cancelled")),
+    ]);
+
+  return {
+    cancelledEvents,
+    draftEvents,
+    publishedEvents,
+    totalEvents,
+  };
 }
 
 export async function getSerializedPublishedEvents(): Promise<EventRow[]> {
@@ -188,4 +265,82 @@ function mapEventRow(row: EventQueryRow): EventListItem {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+function getEventWhere(query: DataTableQuery): SQL | undefined {
+  const conditions: SQL[] = [];
+  const statusFilters = getValidStatusFilters(
+    getDataTableFilterValues(query, "status"),
+  );
+  const posterFilters = getDataTableFilterValues(query, "posterStatus");
+
+  if (query.search) {
+    const pattern = `%${query.search}%`;
+    const searchCondition = or(
+      ilike(events.title, pattern),
+      ilike(events.description, pattern),
+      ilike(events.location, pattern),
+      ilike(storageObjects.originalFilename, pattern),
+      ilike(user.name, pattern),
+      ilike(user.email, pattern),
+    );
+    if (searchCondition) conditions.push(searchCondition);
+  }
+
+  if (statusFilters.length > 0) {
+    conditions.push(inArray(events.status, statusFilters));
+  }
+
+  if (posterFilters.length === 1) {
+    const posterFilter = posterFilters[0];
+    if (posterFilter === "has_poster") {
+      conditions.push(isNotNull(storageObjects.id));
+    } else if (posterFilter === "no_poster") {
+      conditions.push(isNull(storageObjects.id));
+    }
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+function getEventOrderBy(query: DataTableQuery) {
+  const isAscending = query.sortDirection === "asc";
+
+  switch (query.sortBy) {
+    case "title":
+      return isAscending
+        ? [asc(events.title), desc(events.id)]
+        : [desc(events.title), desc(events.id)];
+    case "startsAt":
+      return isAscending
+        ? [asc(events.startsAt), asc(events.id)]
+        : [desc(events.startsAt), desc(events.id)];
+    case "endsAt":
+      return isAscending
+        ? [asc(events.endsAt), asc(events.id)]
+        : [desc(events.endsAt), desc(events.id)];
+    case "location":
+      return isAscending
+        ? [asc(events.location), desc(events.id)]
+        : [desc(events.location), desc(events.id)];
+    case "status":
+      return isAscending
+        ? [asc(events.status), desc(events.id)]
+        : [desc(events.status), desc(events.id)];
+    case "poster":
+      return isAscending
+        ? [asc(storageObjects.originalFilename), desc(events.id)]
+        : [desc(storageObjects.originalFilename), desc(events.id)];
+    default:
+      return isAscending
+        ? [asc(events.updatedAt), asc(events.id)]
+        : [desc(events.updatedAt), desc(events.id)];
+  }
+}
+
+function getValidStatusFilters(values: string[]): EventRow["status"][] {
+  return values.flatMap((value) => {
+    const parsedValue = eventStatusSchema.safeParse(value);
+    return parsedValue.success ? [parsedValue.data] : [];
+  });
 }

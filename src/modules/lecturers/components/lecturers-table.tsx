@@ -20,6 +20,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import {
   Avatar,
@@ -59,6 +60,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminLecturersQueryKey = ["admin-lecturers"];
@@ -93,6 +95,7 @@ interface LecturerFormValues {
 interface LecturersTableProps {
   initialLecturers: LecturerRow[];
   initialCourses: CourseRow[];
+  initialMeta: DataTablePageMeta;
   permissions: LecturerTablePermissions;
 }
 
@@ -105,6 +108,7 @@ interface LecturerTablePermissions {
 export function LecturersTable({
   initialCourses,
   initialLecturers,
+  initialMeta,
   permissions,
 }: LecturersTableProps) {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -113,12 +117,25 @@ export function LecturersTable({
   const [deletingLecturer, setDeletingLecturer] =
     React.useState<LecturerRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const lecturersQuery = useQuery({
-    queryKey: adminLecturersQueryKey,
-    queryFn: fetchAdminLecturers,
-    initialData: { lecturers: initialLecturers },
+    queryKey: [...adminLecturersQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminLecturers(serverTable.searchParams),
+    initialData: { lecturers: initialLecturers, meta: initialMeta },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: lecturersQuery.data.meta.pageCount,
+      totalRows: lecturersQuery.data.meta.totalRows,
+    });
+  }, [
+    lecturersQuery.data.meta.pageCount,
+    lecturersQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminLecturer,
@@ -186,6 +203,7 @@ export function LecturersTable({
           photoStatus: false,
         }}
         searchPlaceholder="Search by name, email, or course..."
+        serverState={serverTable.state}
       />
 
       <LecturerDialog
@@ -774,8 +792,8 @@ function DeleteLecturerDialog({
   );
 }
 
-async function fetchAdminLecturers() {
-  const response = await fetch("/api/admin/lecturers", {
+async function fetchAdminLecturers(searchParams: string) {
+  const response = await fetch(`/api/admin/lecturers?${searchParams}`, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

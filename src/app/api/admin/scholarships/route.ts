@@ -5,16 +5,17 @@ import {
   deleteScholarshipProgramInputSchema,
   updateScholarshipProgramInputSchema,
 } from "@/modules/scholarships/contracts";
-import { getSerializedScholarshipPrograms } from "@/modules/scholarships/queries";
+import { getSerializedScholarshipProgramPage } from "@/modules/scholarships/queries";
 import {
   createScholarshipProgram,
   deleteScholarshipProgram,
   updateScholarshipProgram,
 } from "@/modules/scholarships/server/scholarships";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!env.SCHOLARSHIPS_ENABLED) return notFoundResponse();
 
   const guard = await requireApiPermission({
@@ -23,8 +24,13 @@ export async function GET() {
   });
   if (!guard.ok) return guard.response;
 
-  const scholarshipPrograms = await getSerializedScholarshipPrograms();
-  return NextResponse.json({ scholarshipPrograms });
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedScholarshipProgramPage(query);
+
+  return NextResponse.json({
+    meta: page.meta,
+    scholarshipPrograms: page.items,
+  });
 }
 
 export async function POST(request: Request) {

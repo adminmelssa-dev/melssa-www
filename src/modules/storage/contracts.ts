@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { userRoleSchema } from "@/modules/auth/contracts";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export const storageProviderSchema = z.literal("uploadthing");
 
@@ -121,6 +122,7 @@ export const storageObjectRowSchema = z.object({
 });
 
 export const adminStorageResponseSchema = z.object({
+  meta: dataTablePageMetaSchema,
   storageObjects: z.array(storageObjectRowSchema),
 });
 

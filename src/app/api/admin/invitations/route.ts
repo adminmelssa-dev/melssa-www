@@ -4,25 +4,29 @@ import {
   inviteAdminUserInputSchema,
   type AdminInvitationMutation,
 } from "@/modules/auth/contracts";
-import { getSerializedAdminInvitations } from "@/modules/auth/queries";
+import { getSerializedAdminInvitationPage } from "@/modules/auth/queries";
 import {
   createAuthInvitation,
   resendAuthInvitation,
   revokeAuthInvitation,
 } from "@/modules/auth/server/invitations";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({
     resource: "user",
     action: "set-role",
   });
   if (!guard.ok) return guard.response;
 
-  const invitations = await getSerializedAdminInvitations();
+  const query = parseDataTableQuery(new URL(request.url).searchParams, {
+    defaultPageSize: 5,
+  });
+  const page = await getSerializedAdminInvitationPage(query);
 
-  return NextResponse.json({ invitations });
+  return NextResponse.json({ invitations: page.items, meta: page.meta });
 }
 
 export async function POST(request: Request) {

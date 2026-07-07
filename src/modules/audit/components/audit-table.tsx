@@ -9,14 +9,17 @@ import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { Badge } from "@/components/ui/badge";
 import {
   adminAuditLogsResponseSchema,
   type AdminAuditLogsResponse,
+  type AuditLogFilterOptions,
   type AuditLogRow,
   type AuditMetadata,
 } from "@/modules/audit/contracts";
 import { actionResultSchema } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 
 const adminAuditLogsQueryKey = ["admin-audit-log"];
 
@@ -29,31 +32,50 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en", {
 });
 
 interface AuditTableProps {
+  filterOptions: AuditLogFilterOptions;
   initialAuditLogs: AuditLogRow[];
+  initialMeta: DataTablePageMeta;
 }
 
-export function AuditTable({ initialAuditLogs }: AuditTableProps) {
+export function AuditTable({
+  filterOptions,
+  initialAuditLogs,
+  initialMeta,
+}: AuditTableProps) {
+  const serverTable = useServerDataTable({ initialPageSize: 20 });
+  const setPageMeta = serverTable.setPageMeta;
   const auditQuery = useQuery({
-    queryKey: adminAuditLogsQueryKey,
-    queryFn: fetchAdminAuditLogs,
-    initialData: { auditLogs: initialAuditLogs },
+    queryKey: [...adminAuditLogsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminAuditLogs(serverTable.searchParams),
+    initialData: { auditLogs: initialAuditLogs, meta: initialMeta },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: auditQuery.data.meta.pageCount,
+      totalRows: auditQuery.data.meta.totalRows,
+    });
+  }, [
+    auditQuery.data.meta.pageCount,
+    auditQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const columns = React.useMemo(() => getColumns(), []);
   const filters = React.useMemo(
     () => [
       {
         columnId: "entityType",
-        options: getUniqueOptions(auditQuery.data.auditLogs, "entityType"),
+        options: filterOptions.entityTypes,
         title: "Entity",
       },
       {
         columnId: "action",
-        options: getUniqueOptions(auditQuery.data.auditLogs, "action"),
+        options: filterOptions.actions,
         title: "Action",
       },
     ],
-    [auditQuery.data.auditLogs],
+    [filterOptions],
   );
 
   return (
@@ -76,6 +98,7 @@ export function AuditTable({ initialAuditLogs }: AuditTableProps) {
       initialColumnVisibility={{ details: false }}
       initialPageSize={20}
       searchPlaceholder="Search audit log..."
+      serverState={serverTable.state}
     />
   );
 }
@@ -189,8 +212,13 @@ function MetadataBadges({ metadata }: { metadata: AuditMetadata }) {
   );
 }
 
-async function fetchAdminAuditLogs(): Promise<AdminAuditLogsResponse> {
-  const response = await fetch("/api/admin/audit-log", {
+async function fetchAdminAuditLogs(
+  searchParams: string,
+): Promise<AdminAuditLogsResponse> {
+  const url = searchParams
+    ? `/api/admin/audit-log?${searchParams}`
+    : "/api/admin/audit-log";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();
@@ -207,24 +235,11 @@ async function fetchAdminAuditLogs(): Promise<AdminAuditLogsResponse> {
   return adminAuditLogsResponseSchema.parse(body);
 }
 
-function getUniqueOptions(
-  rows: AuditLogRow[],
-  key: "action" | "entityType",
-): { label: string; value: string }[] {
-  return Array.from(new Set(rows.map((row) => row[key])))
-    .sort((first, second) => first.localeCompare(second))
-    .map((value) => ({ label: formatOptionLabel(value), value }));
-}
-
 function metadataToSearchText(metadata: AuditMetadata): string {
   return Object.entries(metadata)
     .filter(([, value]) => value !== null)
     .map(([key, value]) => `${key} ${String(value)}`)
     .join(" ");
-}
-
-function formatOptionLabel(value: string): string {
-  return value.replaceAll("_", " ").replaceAll(".", " ");
 }
 
 function formatMetadataKey(key: string): string {

@@ -19,6 +19,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminSpotlightsQueryKey = ["admin-spotlights"];
@@ -86,6 +88,7 @@ interface SpotlightFormValues {
 }
 
 interface SpotlightsTableProps {
+  initialMeta: DataTablePageMeta;
   initialSpotlights: SpotlightRow[];
   permissions: SpotlightTablePermissions;
 }
@@ -98,6 +101,7 @@ interface SpotlightTablePermissions {
 }
 
 export function SpotlightsTable({
+  initialMeta,
   initialSpotlights,
   permissions,
 }: SpotlightsTableProps) {
@@ -107,12 +111,25 @@ export function SpotlightsTable({
   const [deletingSpotlight, setDeletingSpotlight] =
     React.useState<SpotlightRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const spotlightsQuery = useQuery({
-    queryKey: adminSpotlightsQueryKey,
-    queryFn: fetchAdminSpotlights,
-    initialData: { spotlights: initialSpotlights },
+    queryKey: [...adminSpotlightsQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminSpotlights(serverTable.searchParams),
+    initialData: { meta: initialMeta, spotlights: initialSpotlights },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: spotlightsQuery.data.meta.pageCount,
+      totalRows: spotlightsQuery.data.meta.totalRows,
+    });
+  }, [
+    setPageMeta,
+    spotlightsQuery.data.meta.pageCount,
+    spotlightsQuery.data.meta.totalRows,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminSpotlight,
@@ -178,6 +195,7 @@ export function SpotlightsTable({
         getRowId={(spotlight) => String(spotlight.id)}
         initialColumnVisibility={{ photoStatus: false }}
         searchPlaceholder="Search spotlights..."
+        serverState={serverTable.state}
       />
 
       <SpotlightDialog
@@ -679,8 +697,11 @@ function SpotlightStatusBadge({ status }: { status: ContentStatus }) {
   return <Badge variant="outline">{CONTENT_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminSpotlights() {
-  const response = await fetch("/api/admin/spotlights", {
+async function fetchAdminSpotlights(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/spotlights?${searchParams}`
+    : "/api/admin/spotlights";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

@@ -6,8 +6,8 @@ import {
   type AdminFundraisingMutation,
 } from "@/modules/fundraising/contracts";
 import {
-  getSerializedFundraisingCampaigns,
-  getSerializedFundraisingInquiries,
+  getSerializedFundraisingCampaignPage,
+  getSerializedFundraisingInquiryPage,
 } from "@/modules/fundraising/queries";
 import {
   createFundraisingCampaign,
@@ -16,6 +16,7 @@ import {
   updateFundraisingInquiry,
 } from "@/modules/fundraising/server/fundraising";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
 export async function GET() {
@@ -25,12 +26,21 @@ export async function GET() {
   });
   if (!guard.ok) return guard.response;
 
-  const [campaigns, inquiries] = await Promise.all([
-    getSerializedFundraisingCampaigns(),
-    getSerializedFundraisingInquiries(),
+  const [campaignPage, inquiryPage] = await Promise.all([
+    getSerializedFundraisingCampaignPage(
+      parseDataTableQuery(new URLSearchParams()),
+    ),
+    getSerializedFundraisingInquiryPage(
+      parseDataTableQuery(new URLSearchParams()),
+    ),
   ]);
 
-  return NextResponse.json({ campaigns, inquiries });
+  return NextResponse.json({
+    campaignMeta: campaignPage.meta,
+    campaigns: campaignPage.items,
+    inquiries: inquiryPage.items,
+    inquiryMeta: inquiryPage.meta,
+  });
 }
 
 export async function POST(request: Request) {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { contentStatusSchema } from "@/modules/content/contracts";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 export {
   CONTENT_STATUS_LABELS,
   CONTENT_STATUS_OPTIONS,
@@ -80,6 +81,7 @@ export const announcementRowSchema = z.object({
 
 export const adminAnnouncementsResponseSchema = z.object({
   announcements: z.array(announcementRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export const publicAnnouncementsResponseSchema = z.object({

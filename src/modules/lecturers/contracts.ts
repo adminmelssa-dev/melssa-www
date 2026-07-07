@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export const lecturerCourseSchema = z.object({
   id: z.number().int().positive(),
@@ -70,6 +71,7 @@ export const deleteLecturerInputSchema = z.object({
 
 export const adminLecturersResponseSchema = z.object({
   lecturers: z.array(lecturerRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export type LecturerCourse = z.infer<typeof lecturerCourseSchema>;

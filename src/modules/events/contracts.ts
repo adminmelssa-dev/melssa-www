@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { eventStatusSchema } from "@/modules/content/contracts";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 export {
   EVENT_STATUS_LABELS,
   EVENT_STATUS_OPTIONS,
@@ -68,6 +69,7 @@ export const eventRowSchema = z.object({
 
 export const adminEventsResponseSchema = z.object({
   events: z.array(eventRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export const publicEventsResponseSchema = z.object({

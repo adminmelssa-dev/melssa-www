@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { contentStatusSchema } from "@/modules/content/contracts";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 export {
   CONTENT_STATUS_LABELS,
   CONTENT_STATUS_OPTIONS,
@@ -46,6 +47,7 @@ export const spotlightRowSchema = z.object({
 });
 
 export const adminSpotlightsResponseSchema = z.object({
+  meta: dataTablePageMetaSchema,
   spotlights: z.array(spotlightRowSchema),
 });
 

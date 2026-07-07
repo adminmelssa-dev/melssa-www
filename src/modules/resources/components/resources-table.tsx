@@ -19,6 +19,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,7 @@ import {
   type ActionResult,
 } from "@/lib/action-result";
 import { formatBytes } from "@/lib/format-bytes";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminResourcesQueryKey = ["admin-resources"];
@@ -102,6 +104,7 @@ interface ResourceFormValues {
 
 interface ResourcesTableProps {
   initialCourses: CourseRow[];
+  initialMeta: DataTablePageMeta;
   initialResources: ResourceRow[];
   permissions: ResourceTablePermissions;
 }
@@ -115,6 +118,7 @@ interface ResourceTablePermissions {
 
 export function ResourcesTable({
   initialCourses,
+  initialMeta,
   initialResources,
   permissions,
 }: ResourcesTableProps) {
@@ -124,12 +128,25 @@ export function ResourcesTable({
   const [deletingResource, setDeletingResource] =
     React.useState<ResourceRow | null>(null);
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const resourcesQuery = useQuery({
-    queryKey: adminResourcesQueryKey,
-    queryFn: fetchAdminResources,
-    initialData: { resources: initialResources },
+    queryKey: [...adminResourcesQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminResources(serverTable.searchParams),
+    initialData: { meta: initialMeta, resources: initialResources },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: resourcesQuery.data.meta.pageCount,
+      totalRows: resourcesQuery.data.meta.totalRows,
+    });
+  }, [
+    resourcesQuery.data.meta.pageCount,
+    resourcesQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminResource,
@@ -202,6 +219,7 @@ export function ResourcesTable({
         ]}
         getRowId={(resource) => String(resource.id)}
         searchPlaceholder="Search by title, course, or file..."
+        serverState={serverTable.state}
       />
 
       <ResourceDialog
@@ -842,8 +860,11 @@ function ResourceStatusBadge({ status }: { status: ContentStatus }) {
   return <Badge variant="outline">{CONTENT_STATUS_LABELS[status]}</Badge>;
 }
 
-async function fetchAdminResources() {
-  const response = await fetch("/api/admin/resources", {
+async function fetchAdminResources(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/resources?${searchParams}`
+    : "/api/admin/resources";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

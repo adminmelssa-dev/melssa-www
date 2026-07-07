@@ -4,7 +4,7 @@ import {
   deleteEventInputSchema,
   updateEventInputSchema,
 } from "@/modules/events/contracts";
-import { getSerializedEvents } from "@/modules/events/queries";
+import { getSerializedEventPage } from "@/modules/events/queries";
 import {
   createEvent,
   deleteEvent,
@@ -14,15 +14,17 @@ import {
   errorResult,
   successResult,
 } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({ resource: "event", action: "read" });
   if (!guard.ok) return guard.response;
 
-  const events = await getSerializedEvents();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedEventPage(query);
 
-  return NextResponse.json({ events });
+  return NextResponse.json({ events: page.items, meta: page.meta });
 }
 
 export async function POST(request: Request) {

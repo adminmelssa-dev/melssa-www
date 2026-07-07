@@ -45,6 +45,12 @@ describe("audit contracts", () => {
           createdAt: new Date("2026-07-06T12:00:00.000Z").toISOString(),
         },
       ],
+      meta: {
+        pageCount: 1,
+        pageIndex: 0,
+        pageSize: 20,
+        totalRows: 1,
+      },
     });
 
     expect(parsed.auditLogs[0]?.actor).toBeNull();

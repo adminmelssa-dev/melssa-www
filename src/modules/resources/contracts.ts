@@ -6,6 +6,7 @@ import {
 import {
   contentStatusSchema,
 } from "@/modules/content/contracts";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 export {
   CONTENT_STATUS_LABELS,
   CONTENT_STATUS_OPTIONS,
@@ -90,6 +91,7 @@ export const resourceRowSchema = z.object({
 });
 
 export const adminResourcesResponseSchema = z.object({
+  meta: dataTablePageMetaSchema,
   resources: z.array(resourceRowSchema),
 });
 

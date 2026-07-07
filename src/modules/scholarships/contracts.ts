@@ -5,6 +5,7 @@ import {
   CONTENT_STATUS_OPTIONS,
   type ContentStatus,
 } from "@/modules/content/contracts";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export { CONTENT_STATUS_LABELS, CONTENT_STATUS_OPTIONS };
 
@@ -112,6 +113,7 @@ export const scholarshipProgramRowSchema = z.object({
 });
 
 export const adminScholarshipProgramsResponseSchema = z.object({
+  meta: dataTablePageMetaSchema,
   scholarshipPrograms: z.array(scholarshipProgramRowSchema),
 });
 

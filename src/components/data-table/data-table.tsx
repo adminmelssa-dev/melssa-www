@@ -4,6 +4,8 @@ import * as React from "react";
 import {
   type ColumnDef,
   type ColumnFiltersState,
+  type OnChangeFn,
+  type PaginationState,
   type SortingState,
   type Table as TanstackTable,
   type VisibilityState,
@@ -49,6 +51,18 @@ interface DataTableProps<TData, TValue> {
   emptyState?: React.ReactNode;
   initialPageSize?: number;
   initialColumnVisibility?: VisibilityState;
+  serverState?: {
+    columnFilters: ColumnFiltersState;
+    globalFilter: string;
+    onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
+    onGlobalFilterChange: OnChangeFn<string>;
+    onPaginationChange: OnChangeFn<PaginationState>;
+    onSortingChange: OnChangeFn<SortingState>;
+    pageCount: number;
+    pagination: PaginationState;
+    rowCount: number;
+    sorting: SortingState;
+  };
 }
 
 export function DataTable<TData, TValue>({
@@ -61,16 +75,28 @@ export function DataTable<TData, TValue>({
   emptyState,
   initialPageSize = 10,
   initialColumnVisibility,
+  serverState,
 }: DataTableProps<TData, TValue>) {
   "use no memo";
 
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(initialColumnVisibility ?? {});
-  const [columnFilters, setColumnFilters] =
+  const [localColumnFilters, setLocalColumnFilters] =
     React.useState<ColumnFiltersState>([]);
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState("");
+  const [localSorting, setLocalSorting] = React.useState<SortingState>([]);
+  const [localPagination, setLocalPagination] =
+    React.useState<PaginationState>({
+      pageIndex: 0,
+      pageSize: initialPageSize,
+    });
+  const [localGlobalFilter, setLocalGlobalFilter] = React.useState("");
+
+  const columnFilters = serverState?.columnFilters ?? localColumnFilters;
+  const globalFilter = serverState?.globalFilter ?? localGlobalFilter;
+  const isServerSide = serverState !== undefined;
+  const pagination = serverState?.pagination ?? localPagination;
+  const sorting = serverState?.sorting ?? localSorting;
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -85,16 +111,24 @@ export function DataTable<TData, TValue>({
     getRowId,
     getSortedRowModel: getSortedRowModel(),
     globalFilterFn: "includesString",
-    initialState: { pagination: { pageSize: initialPageSize } },
-    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: isServerSide,
+    manualPagination: isServerSide,
+    manualSorting: isServerSide,
+    onColumnFiltersChange:
+      serverState?.onColumnFiltersChange ?? setLocalColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    onGlobalFilterChange: setGlobalFilter,
+    onGlobalFilterChange:
+      serverState?.onGlobalFilterChange ?? setLocalGlobalFilter,
+    onPaginationChange: serverState?.onPaginationChange ?? setLocalPagination,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
+    onSortingChange: serverState?.onSortingChange ?? setLocalSorting,
+    pageCount: serverState?.pageCount,
+    rowCount: serverState?.rowCount,
     state: {
       columnFilters,
       columnVisibility,
       globalFilter,
+      pagination,
       rowSelection,
       sorting,
     },
@@ -106,6 +140,7 @@ export function DataTable<TData, TValue>({
         bulkActions={bulkActions}
         filters={filters}
         searchPlaceholder={searchPlaceholder}
+        showFacetedCounts={!isServerSide}
         table={table}
       />
       <div className="overflow-hidden rounded-xl border bg-card">
@@ -169,7 +204,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} totalRows={serverState?.rowCount} />
     </div>
   );
 }

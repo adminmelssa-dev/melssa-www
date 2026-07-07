@@ -4,22 +4,24 @@ import {
   deleteCourseInputSchema,
   updateCourseInputSchema,
 } from "@/modules/academics/contracts";
-import { getSerializedCourses } from "@/modules/academics/queries";
+import { getSerializedCoursePage } from "@/modules/academics/queries";
 import {
   createCourse,
   deleteCourse,
   updateCourse,
 } from "@/modules/academics/server/courses";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({ resource: "course", action: "read" });
   if (!guard.ok) return guard.response;
 
-  const courses = await getSerializedCourses();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedCoursePage(query);
 
-  return NextResponse.json({ courses });
+  return NextResponse.json({ courses: page.items, meta: page.meta });
 }
 
 export async function POST(request: Request) {

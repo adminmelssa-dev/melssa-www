@@ -10,24 +10,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ConcernsTable } from "@/modules/concerns/components/concerns-table";
-import type { ConcernRow } from "@/modules/concerns/contracts";
-import { getSerializedConcerns } from "@/modules/concerns/queries";
+import {
+  getConcernsAdminStats,
+  getSerializedConcernPage,
+} from "@/modules/concerns/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface ConcernsAdminStats {
-  totalConcerns: number;
-  newConcerns: number;
-  resolvedConcerns: number;
-  archivedConcerns: number;
-}
 
 export async function ConcernsAdminPage() {
   const session = await requirePermission({
     resource: "concern",
     action: "read",
   });
-  const concerns = await getSerializedConcerns();
-  const stats = getConcernsAdminStats(concerns);
+  const [concernPage, stats] = await Promise.all([
+    getSerializedConcernPage(parseDataTableQuery(new URLSearchParams())),
+    getConcernsAdminStats(),
+  ]);
   const permissions = {
     canUpdate: session.permissions.has({
       resource: "concern",
@@ -65,7 +63,11 @@ export async function ConcernsAdminPage() {
         />
       </section>
 
-      <ConcernsTable initialConcerns={concerns} permissions={permissions} />
+      <ConcernsTable
+        initialConcerns={concernPage.items}
+        initialMeta={concernPage.meta}
+        permissions={permissions}
+      />
     </div>
   );
 }
@@ -92,15 +94,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getConcernsAdminStats(concerns: ConcernRow[]): ConcernsAdminStats {
-  return {
-    totalConcerns: concerns.length,
-    newConcerns: concerns.filter((concern) => concern.status === "new").length,
-    resolvedConcerns: concerns.filter((concern) => concern.status === "resolved")
-      .length,
-    archivedConcerns: concerns.filter((concern) => concern.status === "archived")
-      .length,
-  };
 }

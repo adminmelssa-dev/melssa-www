@@ -3,7 +3,8 @@ import {
   adminUserMutationSchema,
   type AdminUserMutation,
 } from "@/modules/auth/contracts";
-import { getSerializedAdminUsers } from "@/modules/auth/queries";
+import { getSerializedAdminUserPage } from "@/modules/auth/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import {
   setAdminUserAccess,
   setAdminUserPermissionGrant,
@@ -13,13 +14,14 @@ import {
 import { requireApiPermission } from "@/server/auth/api-guards";
 import { errorResult, successResult } from "@/lib/action-result";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({ resource: "user", action: "list" });
   if (!guard.ok) return guard.response;
 
-  const users = await getSerializedAdminUsers();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedAdminUserPage(query);
 
-  return NextResponse.json({ users });
+  return NextResponse.json({ meta: page.meta, users: page.items });
 }
 
 export async function PATCH(request: Request) {

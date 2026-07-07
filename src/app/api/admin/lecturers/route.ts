@@ -4,25 +4,27 @@ import {
   deleteLecturerInputSchema,
   updateLecturerInputSchema,
 } from "@/modules/lecturers/contracts";
-import { getSerializedLecturers } from "@/modules/lecturers/queries";
+import { getSerializedLecturerPage } from "@/modules/lecturers/queries";
 import {
   createLecturer,
   deleteLecturer,
   updateLecturer,
 } from "@/modules/lecturers/server/lecturers";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({
     resource: "lecturer",
     action: "read",
   });
   if (!guard.ok) return guard.response;
 
-  const lecturers = await getSerializedLecturers();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedLecturerPage(query);
 
-  return NextResponse.json({ lecturers });
+  return NextResponse.json({ lecturers: page.items, meta: page.meta });
 }
 
 export async function POST(request: Request) {

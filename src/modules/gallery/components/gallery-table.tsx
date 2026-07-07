@@ -19,6 +19,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { StorageUploadField } from "@/components/storage/upload-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ import {
   actionResultSchema,
   type ActionResult,
 } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import type { UploadedStorageObject } from "@/lib/uploadthing";
 
 const adminGalleryQueryKey = ["admin-gallery"];
@@ -88,6 +90,7 @@ interface GalleryFormValues {
 
 interface GalleryTableProps {
   initialGalleryItems: GalleryItemRow[];
+  initialMeta: DataTablePageMeta;
   permissions: GalleryTablePermissions;
 }
 
@@ -99,6 +102,7 @@ interface GalleryTablePermissions {
 
 export function GalleryTable({
   initialGalleryItems,
+  initialMeta,
   permissions,
 }: GalleryTableProps) {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -109,12 +113,25 @@ export function GalleryTable({
     null,
   );
   const queryClient = useQueryClient();
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
 
   const galleryQuery = useQuery({
-    queryKey: adminGalleryQueryKey,
-    queryFn: fetchAdminGallery,
-    initialData: { galleryItems: initialGalleryItems },
+    queryKey: [...adminGalleryQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminGallery(serverTable.searchParams),
+    initialData: { galleryItems: initialGalleryItems, meta: initialMeta },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: galleryQuery.data.meta.pageCount,
+      totalRows: galleryQuery.data.meta.totalRows,
+    });
+  }, [
+    galleryQuery.data.meta.pageCount,
+    galleryQuery.data.meta.totalRows,
+    setPageMeta,
+  ]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminGalleryItem,
@@ -178,6 +195,7 @@ export function GalleryTable({
         getRowId={(item) => String(item.id)}
         initialColumnVisibility={{ featuredStatus: false }}
         searchPlaceholder="Search gallery..."
+        serverState={serverTable.state}
       />
 
       <GalleryDialog
@@ -651,8 +669,11 @@ function DeleteGalleryDialog({
   );
 }
 
-async function fetchAdminGallery() {
-  const response = await fetch("/api/admin/gallery", {
+async function fetchAdminGallery(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/gallery?${searchParams}`
+    : "/api/admin/gallery";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();

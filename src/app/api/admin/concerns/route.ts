@@ -1,23 +1,25 @@
 import { NextResponse } from "next/server";
 import { updateConcernInputSchema } from "@/modules/concerns/contracts";
-import { getSerializedConcerns } from "@/modules/concerns/queries";
+import { getSerializedConcernPage } from "@/modules/concerns/queries";
 import { updateConcern } from "@/modules/concerns/server/concerns";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import {
   errorResult,
   successResult,
 } from "@/lib/action-result";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({
     resource: "concern",
     action: "read",
   });
   if (!guard.ok) return guard.response;
 
-  const concerns = await getSerializedConcerns();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedConcernPage(query);
 
-  return NextResponse.json({ concerns });
+  return NextResponse.json({ concerns: page.items, meta: page.meta });
 }
 
 export async function PATCH(request: Request) {

@@ -4,25 +4,27 @@ import {
   deleteResourceInputSchema,
   updateResourceInputSchema,
 } from "@/modules/resources/contracts";
-import { getSerializedResources } from "@/modules/resources/queries";
+import { getSerializedResourcePage } from "@/modules/resources/queries";
 import {
   createResource,
   deleteResource,
   updateResource,
 } from "@/modules/resources/server/resources";
 import { errorResult, successResult } from "@/lib/action-result";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requireApiPermission } from "@/server/auth/api-guards";
 
-export async function GET() {
+export async function GET(request: Request) {
   const guard = await requireApiPermission({
     resource: "resource",
     action: "read",
   });
   if (!guard.ok) return guard.response;
 
-  const resources = await getSerializedResources();
+  const query = parseDataTableQuery(new URL(request.url).searchParams);
+  const page = await getSerializedResourcePage(query);
 
-  return NextResponse.json({ resources });
+  return NextResponse.json({ meta: page.meta, resources: page.items });
 }
 
 export async function POST(request: Request) {

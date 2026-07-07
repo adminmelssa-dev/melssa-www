@@ -10,23 +10,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { GalleryTable } from "@/modules/gallery/components/gallery-table";
-import type { GalleryItemRow } from "@/modules/gallery/contracts";
-import { getSerializedGalleryItems } from "@/modules/gallery/queries";
+import {
+  getGalleryAdminStats,
+  getSerializedGalleryItemPage,
+} from "@/modules/gallery/queries";
+import { parseDataTableQuery } from "@/lib/data-table-query";
 import { requirePermission } from "@/server/auth/guards";
-
-interface GalleryAdminStats {
-  totalItems: number;
-  featuredItems: number;
-  typedItems: number;
-}
 
 export async function GalleryAdminPage() {
   const session = await requirePermission({
     resource: "gallery",
     action: "read",
   });
-  const galleryItems = await getSerializedGalleryItems();
-  const stats = getGalleryAdminStats(galleryItems);
+  const [galleryPage, stats] = await Promise.all([
+    getSerializedGalleryItemPage(parseDataTableQuery(new URLSearchParams())),
+    getGalleryAdminStats(),
+  ]);
   const permissions = {
     canCreate: session.permissions.has({
       resource: "gallery",
@@ -56,7 +55,8 @@ export async function GalleryAdminPage() {
       </section>
 
       <GalleryTable
-        initialGalleryItems={galleryItems}
+        initialGalleryItems={galleryPage.items}
+        initialMeta={galleryPage.meta}
         permissions={permissions}
       />
     </div>
@@ -85,14 +85,4 @@ function StatCard({
       </CardHeader>
     </Card>
   );
-}
-
-function getGalleryAdminStats(
-  galleryItems: GalleryItemRow[],
-): GalleryAdminStats {
-  return {
-    totalItems: galleryItems.length,
-    featuredItems: galleryItems.filter((item) => item.isFeatured).length,
-    typedItems: galleryItems.filter((item) => item.type !== "other").length,
-  };
 }

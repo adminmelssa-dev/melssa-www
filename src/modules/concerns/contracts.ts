@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataTablePageMetaSchema } from "@/lib/data-table-query";
 
 export const concernCategorySchema = z.union([
   z.literal("academic"),
@@ -98,6 +99,7 @@ export const concernRowSchema = z.object({
 
 export const adminConcernsResponseSchema = z.object({
   concerns: z.array(concernRowSchema),
+  meta: dataTablePageMetaSchema,
 });
 
 export const createConcernInputSchema = z.object({

@@ -20,6 +20,7 @@ import type { ColumnDef, Row } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { useServerDataTable } from "@/components/data-table/use-server-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,7 @@ import {
 } from "@/modules/auth/permissions";
 import { Kicker } from "@/components/ui/kicker";
 import { actionResultSchema } from "@/lib/action-result";
+import type { DataTablePageMeta } from "@/lib/data-table-query";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, ROLES, type UserRole } from "@/modules/auth/roles";
 
@@ -89,6 +91,7 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 
 interface UsersTableProps {
   currentUserId: string;
+  initialMeta: DataTablePageMeta;
   initialUsers: AdminUserRow[];
   permissions: UserTablePermissions;
 }
@@ -102,16 +105,31 @@ interface UserTablePermissions {
 
 export function UsersTable({
   currentUserId,
+  initialMeta,
   initialUsers,
   permissions,
 }: UsersTableProps) {
   const [managingAccessUserId, setManagingAccessUserId] =
     React.useState<string | null>(null);
+  const serverTable = useServerDataTable();
+  const setPageMeta = serverTable.setPageMeta;
   const usersQuery = useQuery({
-    queryKey: adminUsersQueryKey,
-    queryFn: fetchAdminUsers,
-    initialData: { users: initialUsers },
+    queryKey: [...adminUsersQueryKey, serverTable.queryKey],
+    queryFn: () => fetchAdminUsers(serverTable.searchParams),
+    initialData: { meta: initialMeta, users: initialUsers },
   });
+
+  React.useEffect(() => {
+    setPageMeta({
+      pageCount: usersQuery.data.meta.pageCount,
+      totalRows: usersQuery.data.meta.totalRows,
+    });
+  }, [
+    setPageMeta,
+    usersQuery.data.meta.pageCount,
+    usersQuery.data.meta.totalRows,
+  ]);
+
   const managingAccessUser =
     usersQuery.data.users.find((user) => user.id === managingAccessUserId) ??
     null;
@@ -154,6 +172,7 @@ export function UsersTable({
           verificationStatus: false,
         }}
         searchPlaceholder="Search by name or email..."
+        serverState={serverTable.state}
       />
 
       {permissions.canManagePermissions ? (
@@ -685,8 +704,11 @@ function useAdminUserMutation() {
   });
 }
 
-async function fetchAdminUsers() {
-  const response = await fetch("/api/admin/users", {
+async function fetchAdminUsers(searchParams: string) {
+  const url = searchParams
+    ? `/api/admin/users?${searchParams}`
+    : "/api/admin/users";
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
   const body: unknown = await response.json();
