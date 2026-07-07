@@ -19,9 +19,9 @@ const AUTO_OPEN_DELAY_MS = 4500;
 const CANDIDATE_PHOTO = "/kirstin.jpg";
 
 const pillars = [
-  "Timely, effective communication",
-  "A modern digital home for MELSSA",
-  "Every voice engaged & represented",
+  "Semester & annual reports, open to all",
+  "Approved budgets behind every programme",
+  "Every cedi accounted for",
 ];
 
 // Staggered rise-in for the copy, so the modal doesn't feel abrupt.
@@ -154,7 +154,7 @@ export function CampaignPromo() {
                 style={rise(540)}
                 className="mt-8 font-heading text-sm italic text-gold-ink"
               >
-                Every Voice Informed. Every Voice Represented.
+                Every Cedi Accounted For. Every Member Informed.
               </p>
             </div>
           </div>

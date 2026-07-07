@@ -17,7 +17,7 @@ import {
 } from "@/modules/auth/queries";
 import { InvitationsPanel } from "@/modules/auth/components/invitations-panel";
 import { UsersTable } from "@/modules/auth/components/users-table";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface UsersAdminStats {
   totalUsers: number;
@@ -34,15 +34,19 @@ export async function UsersAdminPage() {
   const users = await getSerializedAdminUsers();
   const stats = getUsersAdminStats(users);
   const permissions = {
-    canSetRole: hasPermission(actorSession.user.role, {
+    canSetRole: actorSession.permissions.has({
       resource: "user",
       action: "set-role",
     }),
-    canBan: hasPermission(actorSession.user.role, {
+    canManagePermissions: actorSession.permissions.has({
+      resource: "user",
+      action: "manage-permissions",
+    }),
+    canBan: actorSession.permissions.has({
       resource: "user",
       action: "ban",
     }),
-    canUpdate: hasPermission(actorSession.user.role, {
+    canUpdate: actorSession.permissions.has({
       resource: "user",
       action: "update",
     }),

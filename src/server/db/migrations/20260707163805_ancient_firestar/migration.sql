@@ -1,0 +1,2 @@
+ALTER TABLE "finance_documents" ALTER COLUMN "storage_object_id" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "finance_documents" DROP CONSTRAINT "finance_documents_storage_object_id_storage_objects_id_fkey", ADD CONSTRAINT "finance_documents_storage_object_id_storage_objects_id_fkey" FOREIGN KEY ("storage_object_id") REFERENCES "storage_objects"("id") ON DELETE SET NULL;

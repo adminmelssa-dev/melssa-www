@@ -6,6 +6,12 @@ import {
   resolveUserRole,
 } from "../../../src/modules/auth/roles";
 import {
+  createPermissionKey,
+  getAllPermissionKeys,
+  isPermissionActionForResource,
+  isPermissionResource,
+} from "../../../src/modules/auth/permissions";
+import {
   contentAdminRole,
   siteAdminRole,
   studentRole,
@@ -42,6 +48,11 @@ describe("auth roles", () => {
     expect(studentRole.authorize({ gallery: ["read"] }).success).toBe(false);
     expect(studentRole.authorize({ spotlight: ["read"] }).success).toBe(false);
     expect(studentRole.authorize({ bulletin: ["read"] }).success).toBe(false);
+    expect(studentRole.authorize({ finance: ["read"] }).success).toBe(false);
+    expect(studentRole.authorize({ fundraising: ["read"] }).success).toBe(false);
+    expect(studentRole.authorize({ scholarship: ["read"] }).success).toBe(
+      false,
+    );
   });
 
   test("keeps admin roles authorized for management reads", () => {
@@ -49,6 +60,44 @@ describe("auth roles", () => {
       contentAdminRole.authorize({ announcement: ["read"] }).success,
     ).toBe(true);
     expect(contentAdminRole.authorize({ bulletin: ["send"] }).success).toBe(true);
+    expect(contentAdminRole.authorize({ finance: ["read"] }).success).toBe(
+      false,
+    );
     expect(siteAdminRole.authorize({ audit: ["read"] }).success).toBe(true);
+    expect(siteAdminRole.authorize({ finance: ["publish"] }).success).toBe(true);
+    expect(siteAdminRole.authorize({ fundraising: ["respond"] }).success).toBe(
+      true,
+    );
+    expect(siteAdminRole.authorize({ scholarship: ["publish"] }).success).toBe(
+      true,
+    );
+    expect(
+      siteAdminRole.authorize({ user: ["manage-permissions"] }).success,
+    ).toBe(true);
+  });
+
+  test("keeps direct permission grants bounded to the registry", () => {
+    expect(isPermissionResource("finance")).toBe(true);
+    expect(isPermissionResource("payroll")).toBe(false);
+    expect(
+      isPermissionActionForResource({
+        resource: "fundraising",
+        action: "respond",
+      }),
+    ).toBe(true);
+    expect(
+      isPermissionActionForResource({
+        resource: "scholarship",
+        action: "respond",
+      }),
+    ).toBe(false);
+    expect(
+      getAllPermissionKeys().includes(
+        createPermissionKey({
+          resource: "user",
+          action: "manage-permissions",
+        }),
+      ),
+    ).toBe(true);
   });
 });

@@ -12,7 +12,7 @@ import {
 import { ConcernsTable } from "@/modules/concerns/components/concerns-table";
 import type { ConcernRow } from "@/modules/concerns/contracts";
 import { getSerializedConcerns } from "@/modules/concerns/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface ConcernsAdminStats {
   totalConcerns: number;
@@ -29,11 +29,11 @@ export async function ConcernsAdminPage() {
   const concerns = await getSerializedConcerns();
   const stats = getConcernsAdminStats(concerns);
   const permissions = {
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "concern",
       action: "update",
     }),
-    canArchive: hasPermission(session.user.role, {
+    canArchive: session.permissions.has({
       resource: "concern",
       action: "archive",
     }),

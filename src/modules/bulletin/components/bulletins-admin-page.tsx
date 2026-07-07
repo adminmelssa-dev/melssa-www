@@ -12,7 +12,7 @@ import {
 import { BulletinsTable } from "@/modules/bulletin/components/bulletins-table";
 import type { BulletinIssueRow } from "@/modules/bulletin/contracts";
 import { getSerializedAdminBulletins } from "@/modules/bulletin/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface BulletinsAdminStats {
   subscribers: number;
@@ -29,19 +29,19 @@ export async function BulletinsAdminPage() {
   const data = await getSerializedAdminBulletins();
   const stats = getBulletinsAdminStats(data.bulletins, data.subscriberCount);
   const permissions = {
-    canCreate: hasPermission(session.user.role, {
+    canCreate: session.permissions.has({
       resource: "bulletin",
       action: "create",
     }),
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "bulletin",
       action: "update",
     }),
-    canSend: hasPermission(session.user.role, {
+    canSend: session.permissions.has({
       resource: "bulletin",
       action: "send",
     }),
-    canArchive: hasPermission(session.user.role, {
+    canArchive: session.permissions.has({
       resource: "bulletin",
       action: "archive",
     }),

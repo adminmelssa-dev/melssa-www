@@ -1,17 +1,30 @@
 import "server-only";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import {
+  and,
+  eq,
+} from "drizzle-orm";
 import type {
+  UpdateAdminUserPermissionGrantInput,
   UpdateAdminUserAccessInput,
   UpdateAdminUserRoleInput,
   UpdateAdminUserVerificationInput,
 } from "@/modules/auth/contracts";
 import { ROLE_LABELS, ROLES } from "@/modules/auth/roles";
+import {
+  createPermissionKey,
+  getAllPermissionDefinitions,
+} from "@/modules/auth/permissions";
+import { getPermissionChecker } from "@/server/auth/guards";
 import { ExpectedError } from "@/lib/action-result";
 import { writeAuditLog } from "@/server/audit/log";
 import { db } from "@/server/db";
-import { session, user } from "@/server/db/schema";
+import {
+  session,
+  user,
+  userPermissionGrants,
+} from "@/server/db/schema";
 
 export async function setAdminUserRole({
   actorUserId,
@@ -20,12 +33,19 @@ export async function setAdminUserRole({
   actorUserId: string;
   input: UpdateAdminUserRoleInput;
 }): Promise<void> {
-  if (actorUserId === input.userId && input.role !== ROLES.SITE_ADMIN) {
-    throw new ExpectedError("You cannot remove your own site admin role.");
-  }
-
   const targetUser = await getUserForMutation(input.userId);
   if (targetUser.role === input.role) return;
+
+  if (actorUserId === input.userId) {
+    throw new ExpectedError("You cannot change your own role.");
+  }
+
+  const actorUser = await getUserForMutation(actorUserId);
+  ensureRoleMutationAllowed({
+    actorRole: actorUser.role,
+    nextRole: input.role,
+    targetRole: targetUser.role,
+  });
 
   await db
     .update(user)
@@ -133,6 +153,87 @@ export async function setAdminUserVerification({
   revalidateUsers();
 }
 
+export async function setAdminUserPermissionGrant({
+  actorUserId,
+  input,
+}: {
+  actorUserId: string;
+  input: UpdateAdminUserPermissionGrantInput;
+}): Promise<void> {
+  if (actorUserId === input.userId) {
+    throw new ExpectedError("You cannot change your own direct grants.");
+  }
+
+  const actorUser = await getUserForMutation(actorUserId);
+  const targetUser = await getUserForMutation(input.userId);
+  const actorPermissions = await getPermissionChecker({
+    role: actorUser.role,
+    userId: actorUserId,
+  });
+
+  if (!actorPermissions.has(input)) {
+    throw new ExpectedError(
+      "You cannot grant or revoke permissions you do not hold.",
+    );
+  }
+
+  const permissionLabel = getPermissionGrantLabel(input);
+
+  if (input.intent === "grant") {
+    await db
+      .insert(userPermissionGrants)
+      .values({
+        action: input.action,
+        grantedByUserId: actorUserId,
+        resource: input.resource,
+        userId: input.userId,
+      })
+      .onConflictDoNothing({
+        target: [
+          userPermissionGrants.userId,
+          userPermissionGrants.resource,
+          userPermissionGrants.action,
+        ],
+      });
+
+    await writeAuditLog({
+      actorUserId,
+      action: "user.permission.grant",
+      entityType: "user",
+      entityId: input.userId,
+      summary: `Granted ${permissionLabel} to ${targetUser.email}.`,
+      metadata: {
+        permission: createPermissionKey(input),
+        targetEmail: targetUser.email,
+      },
+    });
+  } else {
+    await db
+      .delete(userPermissionGrants)
+      .where(
+        and(
+          eq(userPermissionGrants.userId, input.userId),
+          eq(userPermissionGrants.resource, input.resource),
+          eq(userPermissionGrants.action, input.action),
+        ),
+      );
+
+    await writeAuditLog({
+      actorUserId,
+      action: "user.permission.revoke",
+      entityType: "user",
+      entityId: input.userId,
+      summary: `Revoked ${permissionLabel} from ${targetUser.email}.`,
+      metadata: {
+        permission: createPermissionKey(input),
+        targetEmail: targetUser.email,
+      },
+    });
+  }
+
+  revalidateUsers();
+}
+
 async function getUserForMutation(userId: string) {
   const [targetUser] = await db
     .select({
@@ -151,6 +252,40 @@ async function getUserForMutation(userId: string) {
   }
 
   return targetUser;
+}
+
+function getPermissionGrantLabel({
+  action,
+  resource,
+}: Pick<UpdateAdminUserPermissionGrantInput, "action" | "resource">): string {
+  const resourceDefinition = getAllPermissionDefinitions().find(
+    (definition) => definition.resource === resource,
+  );
+  const actionDefinition = resourceDefinition?.actions.find(
+    (definition) => definition.action === action,
+  );
+
+  if (!resourceDefinition || !actionDefinition) {
+    return createPermissionKey({ action, resource });
+  }
+
+  return `${resourceDefinition.label}: ${actionDefinition.label}`;
+}
+
+function ensureRoleMutationAllowed({
+  actorRole,
+  nextRole,
+  targetRole,
+}: {
+  actorRole: UpdateAdminUserRoleInput["role"];
+  nextRole: UpdateAdminUserRoleInput["role"];
+  targetRole: UpdateAdminUserRoleInput["role"];
+}): void {
+  if (actorRole === ROLES.SITE_ADMIN) return;
+
+  if (nextRole === ROLES.SITE_ADMIN || targetRole === ROLES.SITE_ADMIN) {
+    throw new ExpectedError("Only site admins can manage site admin roles.");
+  }
 }
 
 function revalidateUsers(): void {

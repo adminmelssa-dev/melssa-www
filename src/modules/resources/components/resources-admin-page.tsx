@@ -13,7 +13,7 @@ import { getSerializedCourses } from "@/modules/academics/queries";
 import { ResourcesTable } from "@/modules/resources/components/resources-table";
 import type { ResourceRow } from "@/modules/resources/contracts";
 import { getSerializedResources } from "@/modules/resources/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface ResourcesAdminStats {
   totalResources: number;
@@ -33,19 +33,19 @@ export async function ResourcesAdminPage() {
   ]);
   const stats = getResourcesAdminStats(resources);
   const permissions = {
-    canCreate: hasPermission(session.user.role, {
+    canCreate: session.permissions.has({
       resource: "resource",
       action: "create",
     }),
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "resource",
       action: "update",
     }),
-    canDelete: hasPermission(session.user.role, {
+    canDelete: session.permissions.has({
       resource: "resource",
       action: "delete",
     }),
-    canPublish: hasPermission(session.user.role, {
+    canPublish: session.permissions.has({
       resource: "resource",
       action: "publish",
     }),

@@ -22,7 +22,10 @@ import { QuickActions } from "@/components/dashboard/overview/quick-actions";
 import { PendingConcerns } from "@/components/dashboard/overview/pending-concerns";
 import { AnnouncementsTable } from "@/components/dashboard/overview/announcements-table";
 import { ROLES, resolveUserRole } from "@/modules/auth/roles";
-import { hasPermission, requireAuth } from "@/server/auth/guards";
+import {
+  getPermissionChecker,
+  requireAuth,
+} from "@/server/auth/guards";
 import {
   formatRelativeTime,
   type ActivityEntry,
@@ -78,11 +81,15 @@ export default async function DashboardPage() {
     return <StudentDashboard firstName={firstName} now={now} />;
   }
 
-  const canReadConcerns = hasPermission(role, {
+  const permissions = await getPermissionChecker({
+    role,
+    userId: session.user.id,
+  });
+  const canReadConcerns = permissions.has({
     resource: "concern",
     action: "read",
   });
-  const canReadAudit = hasPermission(role, { resource: "audit", action: "read" });
+  const canReadAudit = permissions.has({ resource: "audit", action: "read" });
 
   const [resourceRows, eventRows, announcementRows, concernRows, auditRows] =
     await Promise.all([

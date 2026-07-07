@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  isPermissionActionForResource,
+  isPermissionResource,
+  type PermissionResource,
+} from "@/modules/auth/permissions";
 import { ROLES } from "@/modules/auth/roles";
 
 export const normalizedEmailSchema = z
@@ -13,12 +18,34 @@ export const userRoleSchema = z.union([
   z.literal(ROLES.SITE_ADMIN),
 ]);
 
+export const permissionResourceSchema = z.custom<PermissionResource>(
+  (value) => typeof value === "string" && isPermissionResource(value),
+  "Unsupported permission resource.",
+);
+
+export const permissionGrantSchema = z
+  .object({
+    resource: permissionResourceSchema,
+    action: z.string().trim().min(1).max(80),
+  })
+  .superRefine((value, ctx) => {
+    if (!isPermissionActionForResource(value)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["action"],
+        message: "Unsupported permission action for this resource.",
+      });
+    }
+  });
+
 export const adminUserRowSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.email(),
   image: z.string().nullable(),
   role: userRoleSchema,
+  inheritedPermissionKeys: z.array(z.string()),
+  permissionGrants: z.array(permissionGrantSchema),
   emailVerified: z.boolean(),
   banned: z.boolean(),
   banReason: z.string().nullable(),
@@ -101,6 +128,12 @@ export const updateAdminUserVerificationInputSchema = z.object({
   intent: z.union([z.literal("verify"), z.literal("unverify")]),
 });
 
+export const updateAdminUserPermissionGrantInputSchema = permissionGrantSchema
+  .extend({
+    userId: z.string().min(1),
+    intent: z.union([z.literal("grant"), z.literal("revoke")]),
+  });
+
 export const adminUserMutationSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("role"),
@@ -113,6 +146,10 @@ export const adminUserMutationSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("verification"),
     payload: updateAdminUserVerificationInputSchema,
+  }),
+  z.object({
+    type: z.literal("permission"),
+    payload: updateAdminUserPermissionGrantInputSchema,
   }),
 ]);
 
@@ -138,6 +175,7 @@ export type AuthInvitationPreview = z.infer<
   typeof authInvitationPreviewSchema
 >;
 export type AdminUserMutation = z.infer<typeof adminUserMutationSchema>;
+export type PermissionGrantRow = z.infer<typeof permissionGrantSchema>;
 export type UpdateAdminUserRoleInput = z.infer<
   typeof updateAdminUserRoleInputSchema
 >;
@@ -146,4 +184,7 @@ export type UpdateAdminUserAccessInput = z.infer<
 >;
 export type UpdateAdminUserVerificationInput = z.infer<
   typeof updateAdminUserVerificationInputSchema
+>;
+export type UpdateAdminUserPermissionGrantInput = z.infer<
+  typeof updateAdminUserPermissionGrantInputSchema
 >;

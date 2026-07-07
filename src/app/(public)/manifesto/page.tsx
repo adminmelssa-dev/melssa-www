@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { ManifestoHolding } from "@/components/campaign/manifesto-holding";
+import { ManifestoPage } from "@/components/campaign/manifesto-page";
 
 export const metadata: Metadata = {
   title: "Manifesto — Kirstin Austin Ankrah",
   description:
-    "Kirstin Austin Ankrah, candidate for Financial Officer of MELSSA, Accra Technical University. A refreshed manifesto is on the way.",
+    "Kirstin Austin Ankrah, candidate for Financial Officer of MELSSA, Accra Technical University — open books, responsible budgeting, and a lasting finance desk for every member.",
 };
 
-// Holding state until the Financial Officer manifesto is written. To restore
-// the full spread, import { ManifestoPage } and render it here once the
-// refreshed content lands in manifesto-content.ts.
 export default function Manifesto() {
-  return <ManifestoHolding />;
+  return <ManifestoPage />;
 }

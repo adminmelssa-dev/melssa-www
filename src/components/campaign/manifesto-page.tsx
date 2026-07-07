@@ -35,8 +35,8 @@ export function ManifestoPage() {
           <div>
             <Kicker onDark>{manifestoIntro.eyebrow}</Kicker>
             <h1 className="mt-5 text-[clamp(2.6rem,6vw,4.5rem)] leading-[0.98] text-cream">
-              A Voice{" "}
-              <em className="italic text-gold-bright">for All.</em>
+              Every Cedi,{" "}
+              <em className="italic text-gold-bright">Accounted For.</em>
             </h1>
             <p className="mt-6 font-heading text-xl text-cream">
               {manifestoIntro.candidate}
@@ -58,7 +58,7 @@ export function ManifestoPage() {
             <div className="space-y-4 text-[15px] leading-relaxed text-foreground/70 md:pt-2">
               <p>{manifestoIntro.body}</p>
               <p className="font-medium text-foreground">
-                My vision is centred on five pillars.
+                My vision is centred on four pillars.
               </p>
             </div>
           </Reveal>
@@ -71,7 +71,7 @@ export function ManifestoPage() {
           <Reveal>
             <Kicker>The Vision</Kicker>
             <h2 className="mt-4 text-[clamp(2rem,3.4vw,3rem)] leading-[1.02]">
-              Five pillars.
+              Four pillars.
             </h2>
           </Reveal>
 
@@ -150,12 +150,12 @@ export function ManifestoPage() {
         />
         <div className="mx-auto max-w-2xl px-7 py-24 text-center">
           <h2 className="text-[clamp(2rem,3.6vw,3.2rem)] leading-[1.08] text-cream">
-            Every Voice Informed.
+            Every Cedi Accounted For.
             <br />
-            <em className="italic text-gold-bright">Every Voice Represented.</em>
+            <em className="italic text-gold-bright">Every Member Informed.</em>
           </h2>
           <p className="mt-6 text-[15px] text-cream/70">
-            Vote Kirstin Austin Ankrah for Public Relations Officer.
+            Vote Kirstin Austin Ankrah for Financial Officer.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Button asChild variant="gold" className="h-11 rounded-full px-6">

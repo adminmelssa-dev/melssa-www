@@ -6,6 +6,7 @@ import {
 import { getSerializedAdminUsers } from "@/modules/auth/queries";
 import {
   setAdminUserAccess,
+  setAdminUserPermissionGrant,
   setAdminUserRole,
   setAdminUserVerification,
 } from "@/modules/auth/server/users";
@@ -50,6 +51,13 @@ async function requireAdminUserMutationPermission(mutation: AdminUserMutation) {
     return requireApiPermission({ resource: "user", action: "ban" });
   }
 
+  if (mutation.type === "permission") {
+    return requireApiPermission({
+      resource: "user",
+      action: "manage-permissions",
+    });
+  }
+
   return requireApiPermission({ resource: "user", action: "update" });
 }
 
@@ -67,6 +75,14 @@ async function runAdminUserMutation({
 
   if (mutation.type === "access") {
     await setAdminUserAccess({ actorUserId, input: mutation.payload });
+    return;
+  }
+
+  if (mutation.type === "permission") {
+    await setAdminUserPermissionGrant({
+      actorUserId,
+      input: mutation.payload,
+    });
     return;
   }
 

@@ -12,7 +12,7 @@ import {
 import { SpotlightsTable } from "@/modules/spotlights/components/spotlights-table";
 import type { SpotlightRow } from "@/modules/spotlights/contracts";
 import { getSerializedSpotlights } from "@/modules/spotlights/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface SpotlightsAdminStats {
   totalSpotlights: number;
@@ -29,19 +29,19 @@ export async function SpotlightsAdminPage() {
   const spotlights = await getSerializedSpotlights();
   const stats = getSpotlightsAdminStats(spotlights);
   const permissions = {
-    canCreate: hasPermission(session.user.role, {
+    canCreate: session.permissions.has({
       resource: "spotlight",
       action: "create",
     }),
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "spotlight",
       action: "update",
     }),
-    canDelete: hasPermission(session.user.role, {
+    canDelete: session.permissions.has({
       resource: "spotlight",
       action: "delete",
     }),
-    canPublish: hasPermission(session.user.role, {
+    canPublish: session.permissions.has({
       resource: "spotlight",
       action: "publish",
     }),

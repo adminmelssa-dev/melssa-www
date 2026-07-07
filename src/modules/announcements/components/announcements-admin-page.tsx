@@ -12,7 +12,7 @@ import {
 import { AnnouncementsTable } from "@/modules/announcements/components/announcements-table";
 import type { AnnouncementRow } from "@/modules/announcements/contracts";
 import { getSerializedAnnouncements } from "@/modules/announcements/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface AnnouncementsAdminStats {
   totalAnnouncements: number;
@@ -29,19 +29,19 @@ export async function AnnouncementsAdminPage() {
   const announcements = await getSerializedAnnouncements();
   const stats = getAnnouncementsAdminStats(announcements);
   const permissions = {
-    canCreate: hasPermission(session.user.role, {
+    canCreate: session.permissions.has({
       resource: "announcement",
       action: "create",
     }),
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "announcement",
       action: "update",
     }),
-    canDelete: hasPermission(session.user.role, {
+    canDelete: session.permissions.has({
       resource: "announcement",
       action: "delete",
     }),
-    canPublish: hasPermission(session.user.role, {
+    canPublish: session.permissions.has({
       resource: "announcement",
       action: "publish",
     }),

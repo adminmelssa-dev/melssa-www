@@ -13,9 +13,12 @@ export const storageEndpointSchema = z.union([
   z.literal("concernAttachment"),
   z.literal("editorImage"),
   z.literal("eventPoster"),
+  z.literal("financeDocument"),
+  z.literal("fundraisingCoverImage"),
   z.literal("galleryImage"),
   z.literal("lecturerPhoto"),
   z.literal("resourceFile"),
+  z.literal("scholarshipAttachment"),
   z.literal("spotlightPhoto"),
 ]);
 
@@ -40,9 +43,12 @@ export const STORAGE_ENDPOINT_LABELS: Record<StorageEndpointValue, string> = {
   concernAttachment: "Concern Attachment",
   editorImage: "Editor Image",
   eventPoster: "Event Poster",
+  financeDocument: "Finance Document",
+  fundraisingCoverImage: "Fundraising Cover Image",
   galleryImage: "Gallery Image",
   lecturerPhoto: "Lecturer Photo",
   resourceFile: "Resource File",
+  scholarshipAttachment: "Scholarship Attachment",
   spotlightPhoto: "Spotlight Photo",
 };
 
@@ -68,9 +74,21 @@ export const STORAGE_ENDPOINT_OPTIONS: {
   },
   { value: "editorImage", label: STORAGE_ENDPOINT_LABELS.editorImage },
   { value: "eventPoster", label: STORAGE_ENDPOINT_LABELS.eventPoster },
+  {
+    value: "financeDocument",
+    label: STORAGE_ENDPOINT_LABELS.financeDocument,
+  },
+  {
+    value: "fundraisingCoverImage",
+    label: STORAGE_ENDPOINT_LABELS.fundraisingCoverImage,
+  },
   { value: "galleryImage", label: STORAGE_ENDPOINT_LABELS.galleryImage },
   { value: "lecturerPhoto", label: STORAGE_ENDPOINT_LABELS.lecturerPhoto },
   { value: "resourceFile", label: STORAGE_ENDPOINT_LABELS.resourceFile },
+  {
+    value: "scholarshipAttachment",
+    label: STORAGE_ENDPOINT_LABELS.scholarshipAttachment,
+  },
   { value: "spotlightPhoto", label: STORAGE_ENDPOINT_LABELS.spotlightPhoto },
 ];
 

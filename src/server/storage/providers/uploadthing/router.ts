@@ -33,6 +33,13 @@ function endpointRoute(endpoint: StorageEndpoint) {
     },
   })
     .middleware(async ({ files }) => {
+      if (endpoint === "scholarshipAttachment" && !env.SCHOLARSHIPS_ENABLED) {
+        throw new UploadThingError({
+          code: "FORBIDDEN",
+          message: "Scholarship uploads are not enabled.",
+        });
+      }
+
       if (!env.UPLOADTHING_TOKEN) {
         throw new UploadThingError({
           code: "MISSING_ENV",
@@ -109,9 +116,12 @@ export const uploadThingRouter = {
   concernAttachment: endpointRoute("concernAttachment"),
   editorImage: endpointRoute("editorImage"),
   eventPoster: endpointRoute("eventPoster"),
+  financeDocument: endpointRoute("financeDocument"),
+  fundraisingCoverImage: endpointRoute("fundraisingCoverImage"),
   galleryImage: endpointRoute("galleryImage"),
   lecturerPhoto: endpointRoute("lecturerPhoto"),
   resourceFile: endpointRoute("resourceFile"),
+  scholarshipAttachment: endpointRoute("scholarshipAttachment"),
   spotlightPhoto: endpointRoute("spotlightPhoto"),
 } satisfies FileRouter;
 

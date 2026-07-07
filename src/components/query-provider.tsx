@@ -10,7 +10,10 @@ function getQueryClient(): QueryClient {
     browserQueryClient = new QueryClient({
       defaultOptions: {
         queries: {
-          staleTime: 30_000,
+          gcTime: 10 * 60_000,
+          retry: 1,
+          staleTime: 2 * 60_000,
+          refetchOnReconnect: false,
           refetchOnWindowFocus: false,
         },
       },

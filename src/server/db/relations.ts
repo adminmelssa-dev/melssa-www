@@ -13,6 +13,12 @@ export const relations = defineRelations(schema, (r) => ({
     acceptedAuthInvitations: r.many.authInvitations({
       alias: "auth_invitation_acceptor",
     }),
+    permissionGrants: r.many.userPermissionGrants({
+      alias: "user_permission_grant_user",
+    }),
+    grantedPermissionGrants: r.many.userPermissionGrants({
+      alias: "user_permission_grant_granter",
+    }),
     announcements: r.many.announcements(),
     events: r.many.events(),
     resources: r.many.resources(),
@@ -20,6 +26,10 @@ export const relations = defineRelations(schema, (r) => ({
     reviewedConcerns: r.many.anonymousConcerns(),
     galleryItems: r.many.galleryItems(),
     studentSpotlights: r.many.studentSpotlights(),
+    financeDocuments: r.many.financeDocuments(),
+    fundraisingCampaigns: r.many.fundraisingCampaigns(),
+    reviewedFundraisingInquiries: r.many.fundraisingInquiries(),
+    scholarshipPrograms: r.many.scholarshipPrograms(),
     auditLogs: r.many.auditLogs(),
     createdBulletinIssues: r.many.bulletinIssues({
       alias: "created_bulletin_issues",
@@ -72,6 +82,19 @@ export const relations = defineRelations(schema, (r) => ({
       alias: "auth_invitation_acceptor",
     }),
   },
+  userPermissionGrants: {
+    user: r.one.user({
+      from: r.userPermissionGrants.userId,
+      to: r.user.id,
+      alias: "user_permission_grant_user",
+      optional: false,
+    }),
+    grantedBy: r.one.user({
+      from: r.userPermissionGrants.grantedByUserId,
+      to: r.user.id,
+      alias: "user_permission_grant_granter",
+    }),
+  },
   storageObjects: {
     uploader: r.one.user({
       from: r.storageObjects.uploadedByUserId,
@@ -87,6 +110,9 @@ export const relations = defineRelations(schema, (r) => ({
     concernAttachments: r.many.anonymousConcerns(),
     galleryItems: r.many.galleryItems(),
     spotlightPhotos: r.many.studentSpotlights(),
+    financeDocuments: r.many.financeDocuments(),
+    fundraisingCampaignCovers: r.many.fundraisingCampaigns(),
+    scholarshipProgramAttachments: r.many.scholarshipPrograms(),
   },
   courses: {
     lecturerCourses: r.many.lecturerCourses(),
@@ -174,6 +200,48 @@ export const relations = defineRelations(schema, (r) => ({
     }),
     creator: r.one.user({
       from: r.studentSpotlights.createdById,
+      to: r.user.id,
+    }),
+  },
+  financeDocuments: {
+    file: r.one.storageObjects({
+      from: r.financeDocuments.storageObjectId,
+      to: r.storageObjects.id,
+      optional: false,
+    }),
+    creator: r.one.user({
+      from: r.financeDocuments.createdById,
+      to: r.user.id,
+    }),
+  },
+  fundraisingCampaigns: {
+    cover: r.one.storageObjects({
+      from: r.fundraisingCampaigns.coverStorageObjectId,
+      to: r.storageObjects.id,
+    }),
+    creator: r.one.user({
+      from: r.fundraisingCampaigns.createdById,
+      to: r.user.id,
+    }),
+    inquiries: r.many.fundraisingInquiries(),
+  },
+  fundraisingInquiries: {
+    campaign: r.one.fundraisingCampaigns({
+      from: r.fundraisingInquiries.campaignId,
+      to: r.fundraisingCampaigns.id,
+    }),
+    reviewer: r.one.user({
+      from: r.fundraisingInquiries.reviewedByUserId,
+      to: r.user.id,
+    }),
+  },
+  scholarshipPrograms: {
+    attachment: r.one.storageObjects({
+      from: r.scholarshipPrograms.attachmentStorageObjectId,
+      to: r.storageObjects.id,
+    }),
+    creator: r.one.user({
+      from: r.scholarshipPrograms.createdById,
       to: r.user.id,
     }),
   },

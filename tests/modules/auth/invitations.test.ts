@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import {
   acceptAuthInvitationInputSchema,
   adminInvitationMutationSchema,
+  adminUserMutationSchema,
   inviteAdminUserInputSchema,
+  permissionGrantSchema,
 } from "../../../src/modules/auth/contracts";
 import { ROLES } from "../../../src/modules/auth/roles";
 
@@ -35,5 +37,35 @@ describe("auth invitation contracts", () => {
         token: "a".repeat(64),
       }).success,
     ).toBe(true);
+  });
+
+  test("accepts bounded direct permission grants", () => {
+    const parsed = permissionGrantSchema.parse({
+      resource: "fundraising",
+      action: "respond",
+    });
+
+    expect(parsed.resource).toBe("fundraising");
+    expect(parsed.action).toBe("respond");
+    expect(
+      permissionGrantSchema.safeParse({
+        resource: "scholarship",
+        action: "respond",
+      }).success,
+    ).toBe(false);
+  });
+
+  test("accepts admin user permission mutations", () => {
+    const parsed = adminUserMutationSchema.parse({
+      type: "permission",
+      payload: {
+        userId: "user_123",
+        resource: "finance",
+        action: "publish",
+        intent: "grant",
+      },
+    });
+
+    expect(parsed.type).toBe("permission");
   });
 });

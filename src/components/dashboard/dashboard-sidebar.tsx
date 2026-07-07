@@ -17,6 +17,7 @@ import type { UserRole } from "@/modules/auth/roles";
 import { cn } from "@/lib/utils";
 
 interface DashboardSidebarProps {
+  permissionKeys: string[];
   role: UserRole | null;
   userName: string;
   userEmail: string;
@@ -32,6 +33,7 @@ function isActive(href: string, pathname: string): boolean {
 }
 
 export function DashboardSidebar({
+  permissionKeys,
   role,
   userName,
   userEmail,
@@ -39,7 +41,7 @@ export function DashboardSidebar({
   onNavigate,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const groups = getDashboardNavGroups(role);
+  const groups = getDashboardNavGroups(role, permissionKeys);
 
   return (
     <div className="flex h-full flex-col">

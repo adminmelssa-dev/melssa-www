@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { SettingsPanel } from "@/modules/settings/components/settings-panel";
 import { getAdminSettings } from "@/modules/settings/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 export async function SettingsAdminPage() {
   const session = await requirePermission({
@@ -18,7 +18,7 @@ export async function SettingsAdminPage() {
     action: "read",
   });
   const settings = await getAdminSettings();
-  const canUpdate = hasPermission(session.user.role, {
+  const canUpdate = session.permissions.has({
     resource: "settings",
     action: "update",
   });

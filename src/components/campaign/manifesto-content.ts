@@ -1,11 +1,11 @@
-/** Kirstin Austin Ankrah's PRO manifesto, distilled for the editorial page. */
+/** Kirstin Austin Ankrah's Financial Officer manifesto, distilled for the editorial page. */
 
 export const manifestoIntro = {
-  eyebrow: "Manifesto · Public Relations Officer",
+  eyebrow: "Manifesto · Financial Officer",
   candidate: "Kirstin Austin Ankrah",
   affiliation: "Candidate · MELSSA · Accra Technical University",
-  lead: "Communication is the heartbeat of every successful association. It informs, connects, and inspires participation. My vision is to ensure that every member of MELSSA feels informed, represented, and proud to belong.",
-  body: "I am not just offering ideas — I am offering a commitment to build stronger systems that improve communication, increase visibility, and create opportunities for every member to contribute.",
+  lead: "Trust is the foundation of every strong association. When members know exactly how their money is raised, budgeted and spent, they give with confidence and belong with pride. My vision is a MELSSA whose finances are open, accountable, and working for every single member.",
+  body: "I am not offering promises alone — I am offering systems. Clear records, published budgets, honest reporting, and new sources of funding that ease the burden on members while strengthening everything we can achieve together.",
 };
 
 export interface Pillar {
@@ -16,61 +16,51 @@ export interface Pillar {
 
 export const pillars: Pillar[] = [
   {
-    title: "Effective Communication",
+    title: "Open Books",
     summary:
-      "Information should reach everyone at the right time. No member should miss an announcement, opportunity or activity because of poor communication.",
+      "Every member has a right to know how the association's money is handled. Financial reporting should be clear, regular and available to all — never locked away.",
     practice: [
-      "A Weekly MELSSA Bulletin of announcements, opportunities & deadlines",
-      "A communication calendar for early, consistent publicity",
-      "Stronger links between the executive, class reps and members",
+      "Semester financial reports published at the close of each semester",
+      "A comprehensive annual report for every academic year",
+      "Records every member can view and download, any time",
     ],
   },
   {
-    title: "The MELSSA Media Hub",
+    title: "Responsible Budgeting",
     summary:
-      "Great publicity is achieved through teamwork. I will activate the Editorial & Publicity Committee into a full Media Hub.",
+      "Sound planning comes before spending. Every major programme should run on an approved budget that members are free to see.",
     practice: [
-      "Photography, videography, design, writing & social media",
-      "Professional documentation of every event",
-      "Real opportunities for members to build media skills",
+      "Published budgets for the White Coat Ceremony, Congress & Health Screening",
+      "Costed plans for outreach and community programmes",
+      "Spending measured against budget — openly and honestly",
     ],
   },
   {
-    title: "Digital Transformation",
+    title: "Fundraising & Partnerships",
     summary:
-      "A modern association deserves a modern digital presence — and a central home for everything MELSSA online.",
+      "A well-resourced association leans less on the pockets of its members. I will grow our income through campaigns, sponsors and lasting partnerships.",
     practice: [
-      "An official website for announcements, archives & resources",
-      "A better-organised, accessible digital archive",
-      "A consistent, professional identity across all platforms",
+      "Active fundraising campaigns with clear, shared goals",
+      "Sponsorship opportunities for partners who believe in our work",
+      "A visible register of sponsors and the programmes they support",
     ],
   },
   {
-    title: "Member Engagement & Representation",
+    title: "A Lasting Finance Desk",
     summary:
-      "Every voice deserves to be heard. Communication should flow from members to leadership, not only the other way.",
+      "Accountability should outlast any single tenure. I will build a permanent digital home for our finances — reports, budgets and records in one trusted place.",
     practice: [
-      "Accessible channels for feedback, suggestions & concerns",
-      "MELSSA Spotlight, celebrating members' achievements",
-      "Interactive content, polls & real participation",
-    ],
-  },
-  {
-    title: "Building the MELSSA Brand",
-    summary:
-      "Our image should reflect our excellence. I will strengthen MELSSA's identity through professional, consistent communication.",
-    practice: [
-      "Quality publicity before, during & after every programme",
-      "Standardised design for official publications",
-      "Showcasing MELSSA within and beyond ATU",
+      "One official archive for reports, budgets & fundraising",
+      "Consistent, professional financial documentation",
+      "A standard the next officer can inherit and build upon",
     ],
   },
 ];
 
 export const commitments = [
-  "Integrity in leadership",
-  "Professionalism in communication",
-  "Creativity in publicity",
-  "Transparency in representation",
-  "Dedication to every member",
+  "Integrity in every transaction",
+  "Transparency members can verify",
+  "Accountability without exception",
+  "Prudence with every cedi",
+  "Service to the whole association",
 ];

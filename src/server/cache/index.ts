@@ -4,14 +4,17 @@ import type { z } from "zod";
 import { env } from "@/lib/env";
 import { getRedisClient } from "@/server/redis";
 
-export const PUBLIC_CACHE_TTL_SECONDS = 60;
+export const PUBLIC_CACHE_TTL_SECONDS = 10 * 60;
 
 export const PUBLIC_CACHE_KEYS = {
   announcements: "public:announcements:v1",
   events: "public:events:v1",
+  finance: "public:finance:v1",
+  fundraising: "public:fundraising:v1",
   gallery: "public:gallery:v1",
   lecturers: "public:lecturers:v1",
   resources: "public:resources:v1",
+  scholarships: "public:scholarships:v1",
   spotlights: "public:spotlights:v1",
 } satisfies Record<string, string>;
 

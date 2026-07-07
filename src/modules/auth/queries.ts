@@ -1,14 +1,28 @@
 import "server-only";
 
-import { desc } from "drizzle-orm";
+import {
+  asc,
+  desc,
+} from "drizzle-orm";
 import type {
   AdminInvitationRow,
   AdminInvitationStatus,
   AdminUserRow,
+  PermissionGrantRow,
 } from "@/modules/auth/contracts";
+import { permissionGrantSchema } from "@/modules/auth/contracts";
+import {
+  createPermissionKey,
+  getAllPermissionDefinitions,
+} from "@/modules/auth/permissions";
 import { ROLES, type UserRole } from "@/modules/auth/roles";
+import { hasPermission } from "@/server/auth/guards";
 import { db } from "@/server/db";
-import { authInvitations, user } from "@/server/db/schema";
+import {
+  authInvitations,
+  user,
+  userPermissionGrants,
+} from "@/server/db/schema";
 
 export interface AdminUserListItem {
   id: string;
@@ -16,6 +30,8 @@ export interface AdminUserListItem {
   email: string;
   image: string | null;
   role: UserRole;
+  inheritedPermissionKeys: string[];
+  permissionGrants: PermissionGrantRow[];
   emailVerified: boolean;
   banned: boolean;
   banReason: string | null;
@@ -40,27 +56,60 @@ export interface AdminInvitationListItem {
 }
 
 export async function getAdminUsers(): Promise<AdminUserListItem[]> {
-  const rows = await db
-    .select({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      image: user.image,
-      role: user.role,
-      emailVerified: user.emailVerified,
-      banned: user.banned,
-      banReason: user.banReason,
-      banExpires: user.banExpires,
-      lastLoginAt: user.lastLoginAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    })
-    .from(user)
-    .orderBy(desc(user.createdAt));
+  const [rows, grantRows] = await Promise.all([
+    db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        banned: user.banned,
+        banReason: user.banReason,
+        banExpires: user.banExpires,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      })
+      .from(user)
+      .orderBy(desc(user.createdAt)),
+    db
+      .select({
+        action: userPermissionGrants.action,
+        resource: userPermissionGrants.resource,
+        userId: userPermissionGrants.userId,
+      })
+      .from(userPermissionGrants)
+      .orderBy(
+        asc(userPermissionGrants.resource),
+        asc(userPermissionGrants.action),
+      ),
+  ]);
+
+  const grantsByUserId = new Map<string, PermissionGrantRow[]>();
+
+  for (const row of grantRows) {
+    const parsedGrant = permissionGrantSchema.safeParse({
+      action: row.action,
+      resource: row.resource,
+    });
+
+    if (!parsedGrant.success) continue;
+
+    const existingGrants = grantsByUserId.get(row.userId);
+    if (existingGrants) {
+      existingGrants.push(parsedGrant.data);
+    } else {
+      grantsByUserId.set(row.userId, [parsedGrant.data]);
+    }
+  }
 
   return rows.map((row) => ({
     ...row,
     banned: row.banned ?? false,
+    inheritedPermissionKeys: getInheritedPermissionKeys(row.role ?? ROLES.STUDENT),
+    permissionGrants: grantsByUserId.get(row.id) ?? [],
     role: row.role ?? ROLES.STUDENT,
   }));
 }
@@ -74,6 +123,8 @@ export function serializeAdminUser(
     email: item.email,
     image: item.image,
     role: item.role,
+    inheritedPermissionKeys: item.inheritedPermissionKeys,
+    permissionGrants: item.permissionGrants,
     emailVerified: item.emailVerified,
     banned: item.banned,
     banReason: item.banReason,
@@ -87,6 +138,24 @@ export function serializeAdminUser(
 export async function getSerializedAdminUsers(): Promise<AdminUserRow[]> {
   const users = await getAdminUsers();
   return users.map((item) => serializeAdminUser(item));
+}
+
+function getInheritedPermissionKeys(role: UserRole): string[] {
+  return getAllPermissionDefinitions().flatMap((definition) =>
+    definition.actions
+      .filter((item) =>
+        hasPermission(role, {
+          action: item.action,
+          resource: definition.resource,
+        }),
+      )
+      .map((item) =>
+        createPermissionKey({
+          action: item.action,
+          resource: definition.resource,
+        }),
+      ),
+  );
 }
 
 export async function getAdminInvitations(): Promise<

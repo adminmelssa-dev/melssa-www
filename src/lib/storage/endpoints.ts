@@ -3,9 +3,12 @@ export type StorageEndpoint =
   | "concernAttachment"
   | "editorImage"
   | "eventPoster"
+  | "financeDocument"
+  | "fundraisingCoverImage"
   | "galleryImage"
   | "lecturerPhoto"
   | "resourceFile"
+  | "scholarshipAttachment"
   | "spotlightPhoto";
 
 export type StorageFileKind = "image" | "blob";
@@ -57,9 +60,12 @@ export const storageEndpoints: Record<StorageEndpoint, StorageEndpointConfig> = 
   concernAttachment: documentEndpoint("8MB", 8 * 1024 * 1024),
   editorImage: imageEndpoint("4MB", 4 * 1024 * 1024),
   eventPoster: imageEndpoint("4MB", 4 * 1024 * 1024),
+  financeDocument: pdfEndpoint("16MB", 16 * 1024 * 1024),
+  fundraisingCoverImage: imageEndpoint("4MB", 4 * 1024 * 1024),
   galleryImage: imageEndpoint("8MB", 8 * 1024 * 1024),
   lecturerPhoto: imageEndpoint("4MB", 4 * 1024 * 1024),
   resourceFile: documentEndpoint("16MB", 16 * 1024 * 1024),
+  scholarshipAttachment: documentEndpoint("8MB", 8 * 1024 * 1024),
   spotlightPhoto: imageEndpoint("4MB", 4 * 1024 * 1024),
 };
 
@@ -68,9 +74,12 @@ const endpointNames: StorageEndpoint[] = [
   "concernAttachment",
   "editorImage",
   "eventPoster",
+  "financeDocument",
+  "fundraisingCoverImage",
   "galleryImage",
   "lecturerPhoto",
   "resourceFile",
+  "scholarshipAttachment",
   "spotlightPhoto",
 ];
 
@@ -127,5 +136,19 @@ function documentEndpoint(
     maxFileCount: 1,
     acceptedMimeTypes: [...documentMimeTypes],
     acceptedExtensions: documentExtensions,
+  };
+}
+
+function pdfEndpoint(
+  maxFileSize: StorageMaxFileSize,
+  maxFileSizeBytes: number,
+): StorageEndpointConfig {
+  return {
+    kind: "blob",
+    maxFileSize,
+    maxFileSizeBytes,
+    maxFileCount: 1,
+    acceptedMimeTypes: ["application/pdf"],
+    acceptedExtensions: [".pdf"],
   };
 }

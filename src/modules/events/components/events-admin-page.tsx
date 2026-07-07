@@ -12,7 +12,7 @@ import {
 import { EventsTable } from "@/modules/events/components/events-table";
 import type { EventRow } from "@/modules/events/contracts";
 import { getSerializedEvents } from "@/modules/events/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface EventsAdminStats {
   totalEvents: number;
@@ -26,19 +26,19 @@ export async function EventsAdminPage() {
   const events = await getSerializedEvents();
   const stats = getEventsAdminStats(events);
   const permissions = {
-    canCreate: hasPermission(session.user.role, {
+    canCreate: session.permissions.has({
       resource: "event",
       action: "create",
     }),
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "event",
       action: "update",
     }),
-    canDelete: hasPermission(session.user.role, {
+    canDelete: session.permissions.has({
       resource: "event",
       action: "delete",
     }),
-    canPublish: hasPermission(session.user.role, {
+    canPublish: session.permissions.has({
       resource: "event",
       action: "publish",
     }),

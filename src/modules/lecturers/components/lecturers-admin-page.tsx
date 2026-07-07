@@ -13,7 +13,7 @@ import { getSerializedCourses } from "@/modules/academics/queries";
 import { LecturersTable } from "@/modules/lecturers/components/lecturers-table";
 import type { LecturerRow } from "@/modules/lecturers/contracts";
 import { getSerializedLecturers } from "@/modules/lecturers/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface LecturersAdminStats {
   totalLecturers: number;
@@ -33,15 +33,15 @@ export async function LecturersAdminPage() {
   ]);
   const stats = getLecturersAdminStats(lecturers);
   const permissions = {
-    canCreate: hasPermission(session.user.role, {
+    canCreate: session.permissions.has({
       resource: "lecturer",
       action: "create",
     }),
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "lecturer",
       action: "update",
     }),
-    canDelete: hasPermission(session.user.role, {
+    canDelete: session.permissions.has({
       resource: "lecturer",
       action: "delete",
     }),

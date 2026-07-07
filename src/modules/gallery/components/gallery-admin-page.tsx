@@ -12,7 +12,7 @@ import {
 import { GalleryTable } from "@/modules/gallery/components/gallery-table";
 import type { GalleryItemRow } from "@/modules/gallery/contracts";
 import { getSerializedGalleryItems } from "@/modules/gallery/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface GalleryAdminStats {
   totalItems: number;
@@ -28,15 +28,15 @@ export async function GalleryAdminPage() {
   const galleryItems = await getSerializedGalleryItems();
   const stats = getGalleryAdminStats(galleryItems);
   const permissions = {
-    canCreate: hasPermission(session.user.role, {
+    canCreate: session.permissions.has({
       resource: "gallery",
       action: "create",
     }),
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "gallery",
       action: "update",
     }),
-    canDelete: hasPermission(session.user.role, {
+    canDelete: session.permissions.has({
       resource: "gallery",
       action: "delete",
     }),

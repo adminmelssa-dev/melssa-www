@@ -86,3 +86,19 @@ export const bulletinDeliveryStatusEnum = pgEnum("bulletin_delivery_status", [
   "sent",
   "failed",
 ]);
+
+export const financeDocumentTypeEnum = pgEnum("finance_document_type", [
+  "semester_report",
+  "annual_report",
+  "programme_budget",
+]);
+
+export const fundraisingInquiryStatusEnum = pgEnum(
+  "fundraising_inquiry_status",
+  ["new", "reviewing", "responded", "archived"],
+);
+
+export const scholarshipApplicationModeEnum = pgEnum(
+  "scholarship_application_mode",
+  ["information", "external"],
+);

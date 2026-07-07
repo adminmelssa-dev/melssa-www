@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 import { resolveUserRole, type UserRole } from "@/modules/auth/roles";
 import { errorResult } from "@/lib/action-result";
 import {
+  getPermissionChecker,
   getSession,
-  hasPermission,
   type PermissionRequest,
 } from "@/server/auth/guards";
 
@@ -60,8 +60,21 @@ export async function requireApiPermission(
   if (!authResult.ok) return authResult;
 
   const role = resolveUserRole(authResult.session.user.role);
+  if (!role) {
+    return {
+      ok: false,
+      response: NextResponse.json(errorResult(null, "Permission denied."), {
+        status: 403,
+      }),
+    };
+  }
 
-  if (!hasPermission(role, permission)) {
+  const checker = await getPermissionChecker({
+    role,
+    userId: authResult.session.user.id,
+  });
+
+  if (!checker.has(permission)) {
     return {
       ok: false,
       response: NextResponse.json(errorResult(null, "Permission denied."), {

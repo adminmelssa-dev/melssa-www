@@ -12,7 +12,7 @@ import {
 import { CoursesTable } from "@/modules/academics/components/courses-table";
 import type { CourseRow } from "@/modules/academics/contracts";
 import { getSerializedCourses } from "@/modules/academics/queries";
-import { hasPermission, requirePermission } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
 
 interface CoursesAdminStats {
   totalCourses: number;
@@ -26,15 +26,15 @@ export async function CoursesAdminPage() {
   const courses = await getSerializedCourses();
   const stats = getCoursesAdminStats(courses);
   const permissions = {
-    canCreate: hasPermission(session.user.role, {
+    canCreate: session.permissions.has({
       resource: "course",
       action: "create",
     }),
-    canUpdate: hasPermission(session.user.role, {
+    canUpdate: session.permissions.has({
       resource: "course",
       action: "update",
     }),
-    canDelete: hasPermission(session.user.role, {
+    canDelete: session.permissions.has({
       resource: "course",
       action: "delete",
     }),

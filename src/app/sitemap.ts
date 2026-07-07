@@ -32,6 +32,22 @@ const sitemapRoutes: SitemapRoute[] = [
     priority: 0.8,
   },
   {
+    path: "/finance",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+  {
+    path: "/fundraising",
+    changeFrequency: "weekly",
+    priority: 0.7,
+  },
+  // Scholarship page is built but hidden until MELSSA asks for it.
+  // {
+  //   path: "/scholarships",
+  //   changeFrequency: "weekly",
+  //   priority: 0.7,
+  // },
+  {
     path: "/lecturers",
     changeFrequency: "monthly",
     priority: 0.7,

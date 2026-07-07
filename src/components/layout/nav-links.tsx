@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowRight,
+  // Award,
+  BadgeDollarSign,
   Bell,
   CalendarDays,
   FileText,
@@ -96,6 +98,30 @@ const navGroups: NavGroup[] = [
         description: "Celebrating our members",
         icon: Sparkles,
       },
+    ],
+  },
+  {
+    title: "Finance Desk",
+    items: [
+      {
+        title: "Finance",
+        href: "/finance",
+        description: "Published reports and programme budgets",
+        icon: FileText,
+      },
+      {
+        title: "Fundraising",
+        href: "/fundraising",
+        description: "Campaigns, sponsorship and support details",
+        icon: BadgeDollarSign,
+      },
+      // Scholarship public page is built but hidden until MELSSA asks for it.
+      // {
+      //   title: "Scholarships",
+      //   href: "/scholarships",
+      //   description: "Scholarship opportunities and application links",
+      //   icon: Award,
+      // },
     ],
   },
 ];

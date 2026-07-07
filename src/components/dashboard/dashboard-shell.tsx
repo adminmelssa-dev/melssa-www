@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 interface DashboardShellProps {
   initialNotifications: DashboardNotificationsResponse;
+  permissionKeys: string[];
   role: UserRole | null;
   userName: string;
   userEmail: string;
@@ -26,6 +27,7 @@ interface DashboardShellProps {
 /** Dashboard chrome: collapsible desktop sidebar, mobile sheet, topbar, ⌘K palette. */
 export function DashboardShell({
   initialNotifications,
+  permissionKeys,
   role,
   userName,
   userEmail,
@@ -55,6 +57,7 @@ export function DashboardShell({
         )}
       >
         <DashboardSidebar
+          permissionKeys={permissionKeys}
           role={role}
           userName={userName}
           userEmail={userEmail}
@@ -68,6 +71,7 @@ export function DashboardShell({
             <SheetTitle>Navigation</SheetTitle>
           </SheetHeader>
           <DashboardSidebar
+            permissionKeys={permissionKeys}
             role={role}
             userName={userName}
             userEmail={userEmail}
@@ -89,6 +93,7 @@ export function DashboardShell({
       <DashboardCommand
         open={searchOpen}
         onOpenChange={setSearchOpen}
+        permissionKeys={permissionKeys}
         role={role}
       />
     </div>

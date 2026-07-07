@@ -63,6 +63,7 @@ const envSchema = z
       .optional(),
     RATE_LIMIT_DRIVER: z.union([z.literal("database"), z.literal("redis")]).optional(),
     LOCK_DRIVER: z.union([z.literal("noop"), z.literal("redis")]).optional(),
+    SCHOLARSHIPS_ENABLED: trueWhenExplicit,
     UPSTASH_REDIS_REST_URL: optionalEnvUrl,
     UPSTASH_REDIS_REST_TOKEN: optionalEnvString,
     UPLOAD_DRIVER: z.literal("uploadthing").default("uploadthing"),

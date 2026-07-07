@@ -16,6 +16,7 @@ import type { UserRole } from "@/modules/auth/roles";
 interface DashboardCommandProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  permissionKeys: string[];
   role: UserRole | null;
 }
 
@@ -23,10 +24,11 @@ interface DashboardCommandProps {
 export function DashboardCommand({
   open,
   onOpenChange,
+  permissionKeys,
   role,
 }: DashboardCommandProps) {
   const router = useRouter();
-  const groups = getDashboardNavGroups(role);
+  const groups = getDashboardNavGroups(role, permissionKeys);
 
   function go(href: string) {
     onOpenChange(false);
