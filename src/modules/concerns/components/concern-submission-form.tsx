@@ -104,6 +104,13 @@ export function ConcernSubmissionForm({
     setValues((current) => ({ ...current, category: parsedCategory.data }));
   }
 
+  function updateValue(
+    field: Exclude<keyof ConcernSubmissionValues, "category">,
+    value: string,
+  ): void {
+    setValues((current) => ({ ...current, [field]: value }));
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="border border-hairline bg-paper-2">
@@ -139,10 +146,7 @@ export function ConcernSubmissionForm({
             placeholder="Brief summary"
             value={values.subject}
             onChange={(event) =>
-              setValues((current) => ({
-                ...current,
-                subject: event.currentTarget.value,
-              }))
+              updateValue("subject", event.currentTarget.value)
             }
           />
         </div>
@@ -158,10 +162,7 @@ export function ConcernSubmissionForm({
             placeholder="Describe the concern clearly. Do not include your name unless you want to."
             value={values.message}
             onChange={(event) =>
-              setValues((current) => ({
-                ...current,
-                message: event.currentTarget.value,
-              }))
+              updateValue("message", event.currentTarget.value)
             }
           />
         </div>

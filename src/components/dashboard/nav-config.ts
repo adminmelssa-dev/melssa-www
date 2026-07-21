@@ -1,5 +1,5 @@
 import {
-  // Award,
+  Award,
   BadgeDollarSign,
   Bell,
   BookOpenText,
@@ -97,13 +97,12 @@ const financeNav: DashboardNavItem[] = [
     icon: BadgeDollarSign,
     requiredPermissionKey: "fundraising.read",
   },
-  // Scholarship workspace is built but hidden until MELSSA asks for it.
-  // {
-  //   title: "Scholarships",
-  //   href: "/dashboard/scholarships",
-  //   icon: Award,
-  //   requiredPermissionKey: "scholarship.read",
-  // },
+  {
+    title: "Scholarships",
+    href: "/dashboard/scholarships",
+    icon: Award,
+    requiredPermissionKey: "scholarship.read",
+  },
 ];
 
 const adminNav: DashboardNavItem[] = [

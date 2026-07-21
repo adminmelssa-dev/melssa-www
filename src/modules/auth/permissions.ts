@@ -119,13 +119,12 @@ export const PERMISSION_GROUPS: PermissionGroupDefinition[] = [
           action("archive", "Archive", "Archive concern records."),
         ],
       },
-      // Scholarship management is built but hidden until MELSSA asks for it.
-      // {
-      //   resource: "scholarship",
-      //   label: "Scholarships",
-      //   description: "Manage scholarship programme information.",
-      //   actions: publishingActions(),
-      // },
+      {
+        resource: "scholarship",
+        label: "Scholarships",
+        description: "Manage scholarship programme information.",
+        actions: publishingActions(),
+      },
     ],
   },
   {

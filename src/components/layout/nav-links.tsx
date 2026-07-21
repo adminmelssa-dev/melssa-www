@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowRight,
-  // Award,
+  Award,
   BadgeDollarSign,
   Bell,
   CalendarDays,
@@ -115,13 +115,12 @@ const navGroups: NavGroup[] = [
         description: "Campaigns, sponsorship and support details",
         icon: BadgeDollarSign,
       },
-      // Scholarship public page is built but hidden until MELSSA asks for it.
-      // {
-      //   title: "Scholarships",
-      //   href: "/scholarships",
-      //   description: "Scholarship opportunities and application links",
-      //   icon: Award,
-      // },
+      {
+        title: "Scholarships",
+        href: "/scholarships",
+        description: "Scholarship opportunities and application links",
+        icon: Award,
+      },
     ],
   },
 ];

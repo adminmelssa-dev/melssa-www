@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import {
+  Award,
+  BadgeDollarSign,
   Bell,
   CalendarDays,
   FileText,
@@ -44,6 +46,9 @@ const sections: JumpItem[] = [
   { label: "Concerns", href: "/concerns", icon: MessageSquareText },
   { label: "Gallery", href: "/gallery", icon: ImageIcon },
   { label: "Student Spotlight", href: "/spotlight", icon: Sparkles },
+  { label: "Finance", href: "/finance", icon: FileText },
+  { label: "Fundraising", href: "/fundraising", icon: BadgeDollarSign },
+  { label: "Scholarships", href: "/scholarships", icon: Award },
 ];
 
 const more: JumpItem[] = [

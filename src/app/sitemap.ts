@@ -41,12 +41,11 @@ const sitemapRoutes: SitemapRoute[] = [
     changeFrequency: "weekly",
     priority: 0.7,
   },
-  // Scholarship page is built but hidden until MELSSA asks for it.
-  // {
-  //   path: "/scholarships",
-  //   changeFrequency: "weekly",
-  //   priority: 0.7,
-  // },
+  {
+    path: "/scholarships",
+    changeFrequency: "weekly",
+    priority: 0.7,
+  },
   {
     path: "/lecturers",
     changeFrequency: "monthly",

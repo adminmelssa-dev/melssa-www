@@ -1,6 +1,15 @@
-import { Award, ExternalLink, FileText } from "lucide-react";
+import {
+  Award,
+  CalendarDays,
+  ExternalLink,
+  FileText,
+  Mail,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PublicPageHeader } from "@/components/public/public-page-header";
+import { Reveal } from "@/components/ui/reveal";
 import {
   SCHOLARSHIP_APPLICATION_MODE_LABELS,
   type ScholarshipProgramRow,
@@ -11,99 +20,152 @@ export async function ScholarshipsPublicPage() {
   const programs = await getSerializedPublishedScholarshipPrograms();
 
   return (
-    <main className="bg-paper text-foreground">
-      <section className="border-b border-hairline bg-navy-deep py-20 text-cream">
-        <div className="mx-auto max-w-6xl px-5">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-gold-bright">
-            Scholarships
-          </p>
-          <h1 className="mt-4 max-w-3xl font-heading text-4xl font-black md:text-6xl">
-            Scholarship information students can act on.
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-cream/75">
-            Find published opportunities, eligibility details, deadlines, and
-            application links shared by MELSSA.
-          </p>
-        </div>
-      </section>
+    <main className="mx-auto max-w-6xl px-7 py-16">
+      <PublicPageHeader
+        kicker="Student Support"
+        title="Scholarships & awards"
+        description="Published opportunities, eligibility notes, deadlines and application links gathered in one place so members can move before a window closes."
+      />
 
-      <section className="mx-auto max-w-6xl px-5 py-14">
+      <section className="mt-12">
         {programs.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="space-y-7">
             {programs.map((program) => (
-              <ScholarshipCard key={program.id} program={program} />
+              <Reveal key={program.id}>
+                <ScholarshipArticle program={program} />
+              </Reveal>
             ))}
           </div>
         ) : (
-          <div className="flex min-h-64 flex-col items-center justify-center rounded-lg border border-dashed bg-paper-2 text-center">
-            <Award className="size-10 text-foreground/35" />
-            <h2 className="mt-4 font-heading text-2xl font-black">
-              No scholarships published yet
-            </h2>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Scholarship opportunities will appear here once MELSSA publishes
-              them.
-            </p>
-          </div>
+          <EmptyState
+            description="Scholarship opportunities will appear here once MELSSA publishes them."
+            icon={Award}
+            title="No scholarships published yet"
+          />
         )}
       </section>
     </main>
   );
 }
 
-function ScholarshipCard({ program }: { program: ScholarshipProgramRow }) {
+function ScholarshipArticle({ program }: { program: ScholarshipProgramRow }) {
+  const timeline = getTimelineLabel(program);
+
   return (
-    <article className="rounded-lg border bg-card p-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">{program.providerName}</Badge>
-        <Badge variant="outline">
-          {SCHOLARSHIP_APPLICATION_MODE_LABELS[program.applicationMode]}
-        </Badge>
-      </div>
-      <h2 className="mt-4 font-heading text-2xl font-black">{program.title}</h2>
-      {program.summary ? (
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          {program.summary}
-        </p>
-      ) : null}
-      <dl className="mt-5 grid gap-3 text-sm">
-        {program.amountDescription ? (
-          <InfoLine label="Award" value={program.amountDescription} />
-        ) : null}
-        {program.academicYear ? (
-          <InfoLine label="Academic year" value={program.academicYear} />
-        ) : null}
-        {program.closesAt ? (
-          <InfoLine label="Deadline" value={formatDate(program.closesAt)} />
-        ) : null}
-      </dl>
-      <div className="mt-5 flex flex-wrap gap-2">
-        {program.applicationUrl ? (
-          <Button asChild size="sm" variant="gold">
-            <a href={program.applicationUrl} rel="noreferrer" target="_blank">
-              <ExternalLink className="size-4" />
-              Apply externally
-            </a>
-          </Button>
-        ) : null}
-        {program.attachment ? (
-          <Button asChild size="sm" variant="outline">
-            <a href={program.attachment.publicUrl} rel="noreferrer" target="_blank">
-              <FileText className="size-4" />
-              View attachment
-            </a>
-          </Button>
-        ) : null}
+    <article className="border border-hairline bg-paper-2">
+      <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="p-7 sm:p-9">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <Badge variant="secondary">{program.providerName}</Badge>
+            <Badge variant="outline">
+              {SCHOLARSHIP_APPLICATION_MODE_LABELS[program.applicationMode]}
+            </Badge>
+            {program.academicYear ? (
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/45">
+                {program.academicYear}
+              </span>
+            ) : null}
+          </div>
+
+          <h2 className="mt-4 max-w-2xl text-[clamp(1.55rem,2.4vw,2.15rem)] leading-[1.08]">
+            {program.title}
+          </h2>
+
+          {program.summary ? (
+            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-foreground/70">
+              {program.summary}
+            </p>
+          ) : null}
+
+          <div className="mt-7 grid gap-6 border-t border-hairline pt-6 md:grid-cols-2">
+            {program.amountDescription ? (
+              <DetailBlock label="Award" value={program.amountDescription} />
+            ) : null}
+            {timeline ? <DetailBlock label="Timeline" value={timeline} /> : null}
+            {program.eligibility ? (
+              <DetailBlock label="Eligibility" value={program.eligibility} />
+            ) : null}
+            {program.requirements ? (
+              <DetailBlock label="Requirements" value={program.requirements} />
+            ) : null}
+          </div>
+
+          {program.applicationInstructions ? (
+            <div className="mt-7 border-t border-hairline pt-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-ink">
+                Application notes
+              </p>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/70">
+                {program.applicationInstructions}
+              </p>
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="border-t border-hairline bg-paper p-7 lg:border-l lg:border-t-0">
+          <div className="space-y-5">
+            {program.closesAt ? (
+              <div>
+                <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground/45">
+                  <CalendarDays className="size-3.5" />
+                  Deadline
+                </p>
+                <p className="mt-2 text-2xl text-gold-ink">
+                  {formatDate(program.closesAt)}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-2">
+              {program.applicationUrl ? (
+                <Button asChild className="rounded-full" variant="gold">
+                  <a
+                    href={program.applicationUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <ExternalLink className="size-4" />
+                    Apply externally
+                  </a>
+                </Button>
+              ) : null}
+              {program.attachment ? (
+                <Button asChild className="rounded-full" variant="outline">
+                  <a
+                    href={program.attachment.publicUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <FileText className="size-4" />
+                    View attachment
+                  </a>
+                </Button>
+              ) : null}
+              {program.contactEmail ? (
+                <Button asChild className="rounded-full" variant="ghost">
+                  <a href={`mailto:${program.contactEmail}`}>
+                    <Mail className="size-4" />
+                    Contact provider
+                  </a>
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </aside>
       </div>
     </article>
   );
 }
 
-function InfoLine({ label, value }: { label: string; value: string }) {
+function DetailBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{value}</dd>
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground/45">
+        {label}
+      </p>
+      <p className="mt-1.5 text-sm leading-relaxed text-foreground/75">
+        {value}
+      </p>
     </div>
   );
 }
@@ -114,4 +176,14 @@ function formatDate(value: string): string {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function getTimelineLabel(program: ScholarshipProgramRow): string | null {
+  if (program.opensAt && program.closesAt) {
+    return `${formatDate(program.opensAt)} - ${formatDate(program.closesAt)}`;
+  }
+
+  if (program.opensAt) return `Opens ${formatDate(program.opensAt)}`;
+  if (program.closesAt) return `Closes ${formatDate(program.closesAt)}`;
+  return null;
 }
